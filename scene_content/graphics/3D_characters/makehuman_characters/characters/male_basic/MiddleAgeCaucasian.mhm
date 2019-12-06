@@ -1,0 +1,36 @@
+# Written by MakeHuman 1.1.1
+version v1.1.1
+tags MiddleAgeCaucasian
+camera 7.00024584762 9.16301060807 -0.0818610555309 0.874978204049 -0.122384838043 8.7
+modifier breast/breast-trans-down|up 1.000000
+modifier macrodetails-universal/Muscle 0.796000
+modifier macrodetails/African 0.000000
+modifier macrodetails-proportions/BodyProportions 0.719000
+modifier macrodetails/Gender 1.000000
+modifier macrodetails-height/Height 0.500000
+modifier breast/BreastSize 0.000000
+modifier macrodetails/Age 0.485000
+modifier breast/BreastFirmness 0.500000
+modifier macrodetails/Asian 0.000000
+modifier head/head-fat-decr|incr -0.046000
+modifier head/head-age-decr|incr 0.370000
+modifier macrodetails/Caucasian 1.000000
+modifier torso/torso-scale-depth-decr|incr 0.906000
+modifier armslegs/r-hand-fingers-distance-decr|incr 1.000000
+modifier macrodetails-universal/Weight 0.221000
+tongue tongue01 52ad91a3-caad-4e50-8c38-67634e5e789c
+teeth Teeth_Base 0a5ec82a-0d5f-43ce-a765-8f076f95692d
+proxy male_muscle_13290 79e967dc-3f7a-4f2d-851e-4f06753ed571
+hair short04 e09bfd91-f83f-4f9a-ba8c-4635cd1ae0d8
+eyelashes Eyelashes01 d533836f-13ad-4836-8b65-051108253cd2
+skeleton default.mhskel
+eyebrows eyebrow008 79ea307f-a942-40dd-bf50-bbaa41f02034
+eyes HighPolyEyes 2c12f43b-1303-432c-b7ce-d78346baf2e6
+pose standing01.bvh
+clothes male_worksuit01 6afd98fa-381b-456f-aa46-3dd15b27b2f0
+clothes shoes03 ad622a26-da1e-4e3c-9f8e-454edf10d504
+clothesHideFaces True
+skinMaterial skins/middleage_caucasian_male/middleage_caucasian_male.mhmat
+material short04 e09bfd91-f83f-4f9a-ba8c-4635cd1ae0d8 short04.mhmat
+material HighPolyEyes 2c12f43b-1303-432c-b7ce-d78346baf2e6 eyes/materials/brown.mhmat
+subdivide False

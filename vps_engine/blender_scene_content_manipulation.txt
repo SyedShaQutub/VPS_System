@@ -1,0 +1,66 @@
+# META_DATA
+# FBX version: 7300
+
+
+
+# delete the cube
+>>> bpy.ops.object.delete(use_global=False, confirm=False)
+
+# import city scene
+>>> city_model = "C:/Users/Qutub/Documents/VPS/scene_content/graphics/city_models/9btvoxf8n0cg-3dt/Street environment_V01.FBX"
+>>> bpy.ops.import_scene.fbx(filepath=city_model)
+
+# import mhx2
+>>> makehuman_character = "C:/Users/Qutub/Documents/VPS/scene_content/graphics/3D_characters/makehuman_characters/characters/male_basic/male_basic.mhx2"
+
+	#default option
+>>> bpy.ops.import_scene.makehuman_mhx2(filter_glob="*.mhx2", filepath=makehuman_character, useHelpers=False, useOffset=True, useOverride=False, useCustomShapes=True, useFaceShapes=False, useFaceShapeDrivers=False, useFaceRigDrivers=True, useFacePanel=False, useRig=True, finalizeRigify=True, useRotationLimits=True, useDeflector=False, useHairDynamics=False, useHairOnProxy=False, useConservativeMasks=True, useSubsurf=False, subsurfLevels=0, subsurfRenderLevels=1, useMasks='MODIFIER', useHumanType='BOTH', mergeBodyParts=False, mergeToProxy=False, mergeMaxType='BODY', rigType='EXPORTED', genitalia='NONE', usePenisRig=False, hairType='NONE', hairColor=(0.15, 0.03, 0.005, 1))
+
+paramters:
+a. 
+
+# switch to material display 
+
+# blender 2.8
+>>> bpy.data.screens["Layout"].shading.type = 'MATERIAL'
+
+# blender 2.81n
+>>> bpy.context.space_data.shading.type = 'MATERIAL'
+
+
+# edit mode
+>>> bpy.ops.object.editmode_toggle()
+
+
+#select Human character:
+>>> bpy.data.objects['Male_basic'].select_set(True)
+
+
+# makewalk
+
+## usefull links
+
+#Script to load_and_retarget multiple BVH files to multiple characters in blender .
+
+#http://www.makehumancommunity.org/forum/viewtopic.php?f=9&t=14036#
+
+>>> female_bvhpath="C:/Users/Qutub/Documents/VPS/scene_content/graphics/3D_characters/Motion Capture data/Female1_bvh/Female1_B03_Walk1.bvh"
+>>> male_bvhpath = "C:/Users/Qutub/Documents/VPS/scene_content/graphics/3D_characters/Motion Capture data/Male1_bvh/Male1_B3_Walk.bvh"
+>>> bpy.ops.mcp.load_and_retarget(filepath=*_bvhpath)
+
+
+# scale or Resize 
+
+>>> bpy.ops.transform.resize(value=(0.09,0.09,0.09))
+
+
+# play animation
+
+scratch pad:
+
+>>> bpy.ops.import_scene.makehuman_mhx2()
+
+
+C:/Users/Qutub/Documents/VPS/scene_content/graphics/3D_characters/Motion Capture data/Female1_bvh
+
+

@@ -23,8 +23,8 @@ import asset_import
 importlib.reload(asset_import)
 from asset_import import *
 
-
 def main():
+
      bld_clearobjs()
 
      # TODO: Import city and character models form bash file

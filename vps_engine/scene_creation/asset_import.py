@@ -38,4 +38,7 @@ class MakeHuman:
         # TODO: scale is manually adjusted. Need to adjust to the proportion of the city assets
         bpy.ops.transform.resize(value=(0.09,0.09,0.09))
         bpy.ops.object.select_all(action='DESELECT')
+        bpy.context.object.hide_viewport = True
+        
+
 

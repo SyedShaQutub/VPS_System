@@ -23,9 +23,14 @@ import asset_import
 importlib.reload(asset_import)
 from asset_import import *
 
+def test_edited_bvh(character_path):
+     mocap_data_basicwalk_edited = os.path.join(scene_path + '/graphics/3D_characters/Motion Capture data/Female1_bvh_edit/Female1_B03_Walk1.bvh')
+     male_char_01 = MakeHuman('male_basic01', character_path)
+     male_char_01.attach_mocap(mocap_data_basicwalk_edited)
+
 def main():
 
-     bld_clearobjs()
+     bld_clearscreenspace()
 
      # TODO: Import city and character models form bash file
      citymodel_path= os.path.join(scene_path + '/graphics/city_models/9btvoxf8n0cg-3dt/Street environment_V01.FBX') #"C:/Users/Qutub/Documents/VPS_System/scene_content/graphics/city_models/9btvoxf8n0cg-3dt/Street environment_V01.FBX"
@@ -33,11 +38,13 @@ def main():
      city = CityModels(name='Square_City',path=citymodel_path,filetype=filetype)
 
      mhchar_path = os.path.join(scene_path + '/graphics/3D_characters/makehuman_characters/characters/male_basic/male_basic.mhx2')
-     male_char = MakeHuman('male_basic', mhchar_path)
+     mocap_data_basicwalk = os.path.join(scene_path + '/graphics/3D_characters/Motion Capture data/Female1_bvh/Female1_B03_Walk1.bvh')
+     male_char_00 = MakeHuman('male_basic00', mhchar_path)
+     male_char_00.attach_mocap(mocap_data_basicwalk)
 
-     mocap_data = os.path.join(scene_path + '/graphics/3D_characters/Motion Capture data/Female1_bvh/Female1_B03_Walk1.bvh')
-     male_char.attach_mocap(mocap_data)
-     bpy.ops.screen.animation_play()
+     test_edited_bvh(mhchar_path)
+
+     #play_animation()
 
 if __name__ == "__main__":
      main()

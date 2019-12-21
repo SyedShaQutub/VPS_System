@@ -1,6 +1,5 @@
-import sys, os
-
 # reload every import 
+import sys, os
 import importlib
 import bpy
 # TODO: change this to relative path using os/pathlib
@@ -22,7 +21,22 @@ from blender_utils import *
 import asset_import
 importlib.reload(asset_import)
 from asset_import import *
+DEBUG = False
+if DEBUG == True:
+     PYDEV_SOURCE_DIR = "C:/Users/Qutub/.p2/pool/plugins/org.python.pydev.core_7.4.0.201910251334/pysrc"
+     # "/usr/lib/eclipse/dropins/pydev/eclipse/plugins/org.python.pydev_4.5.4.201601292234/pysrc"
+     #C:/Users/Qutub/.p2/pool/plugins/org.python.pydev.core_7.4.0.201910251334/pysrc
 
+     if PYDEV_SOURCE_DIR not in sys.path:
+          sys.path.append(PYDEV_SOURCE_DIR)
+
+     import pydevd
+
+     pydevd.settrace()
+
+     bling = "the parrot has ceased to be"
+     print(bling)
+     
 def test_edited_bvh(character_path):
      mocap_data_basicwalk_edited = os.path.join(scene_path + '/graphics/3D_characters/Motion Capture data/Female1_bvh_edit/Female1_B03_Walk1.bvh')
      male_char_01 = MakeHuman('male_basic01', character_path)
@@ -39,7 +53,7 @@ def main():
 
      mhchar_path = os.path.join(scene_path + '/graphics/3D_characters/makehuman_characters/characters/male_basic/male_basic.mhx2')
      mocap_data_basicwalk = os.path.join(scene_path + '/graphics/3D_characters/Motion Capture data/Female1_bvh/Female1_B03_Walk1.bvh')
-     male_char_00 = MakeHuman('male_basic00', mhchar_path)
+     male_char_00 = MakeHuman('male_basic00',  )
      male_char_00.attach_mocap(mocap_data_basicwalk)
 
      test_edited_bvh(mhchar_path)

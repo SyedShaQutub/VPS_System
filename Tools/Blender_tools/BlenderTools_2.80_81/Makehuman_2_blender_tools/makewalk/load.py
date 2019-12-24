@@ -550,11 +550,8 @@ class MCP_OT_RenameBvh(bpy.types.Operator):
 
     def execute(self, context):
         scn = context.scene
-        # srcRig = context.object
-        # trgRig = None
-        # @ssq
-        srcRig = load.readBvhFile(context, filepath, scn, False)
-        trgRig = context.object
+        srcRig = context.object
+        trgRig = None
         for ob in getSceneObjects(context):
             if ob.type == 'ARMATURE' and getSelected(ob) and ob != srcRig:
                 trgRig = ob

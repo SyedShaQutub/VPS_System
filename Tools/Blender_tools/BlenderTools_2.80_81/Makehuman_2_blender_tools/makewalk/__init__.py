@@ -12,7 +12,7 @@
 #  of the License, or (at your option) any later version.
 #
 #  This program is distributed in the hope that it will be useful,
-#  but WITHOUT ANY WARRANTY; without even the importliblied warranty of
+#  but WITHOUT ANY WARRANTY; without even the implied warranty of
 #  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
 #  GNU General Public License for more details.
 #
@@ -47,49 +47,49 @@ bl_info = {
 # To support reload properly, try to access a package var, if it's there, reload everything
 if "bpy" in locals():
     print("Reloading MakeWalk")
-    importlibort importlib
-    importlib.reload(utils)
+    import imp
+    imp.reload(utils)
     if bpy.app.version < (2,80,0):
-        importlib.reload(buttons27)
+        imp.reload(buttons27)
     else:
-        importlib.reload(buttons28)
-    importlib.reload(io_json)
-    importlib.reload(props)
-    importlib.reload(t_pose)
-    importlib.reload(armature)
-    importlib.reload(source)
-    importlib.reload(target)
-    importlib.reload(load)
-    importlib.reload(retarget)
-    importlib.reload(fkik)
-    importlib.reload(simportliblify)
-    importlib.reload(action)
-    importlib.reload(loop)
-    importlib.reload(edit)
-    importlib.reload(floor)
+        imp.reload(buttons28)
+    imp.reload(io_json)
+    imp.reload(props)
+    imp.reload(t_pose)
+    imp.reload(armature)
+    imp.reload(source)
+    imp.reload(target)
+    imp.reload(load)
+    imp.reload(retarget)
+    imp.reload(fkik)
+    imp.reload(simplify)
+    imp.reload(action)
+    imp.reload(loop)
+    imp.reload(edit)
+    imp.reload(floor)
 else:
     print("Loading MakeWalk")
-    importlibort bpy
+    import bpy
 
-    from . importlibort utils
+    from . import utils
     if bpy.app.version < (2,80,0):
-        from . importlibort buttons27
+        from . import buttons27
     else:
-        from . importlibort buttons28
-    from . importlibort io_json
-    from . importlibort props
-    from . importlibort t_pose
-    from . importlibort armature
-    from . importlibort source
-    from . importlibort target
-    from . importlibort load
-    from . importlibort retarget
-    from . importlibort fkik
-    from . importlibort simportliblify
-    from . importlibort action
-    from . importlibort loop
-    from . importlibort edit
-    from . importlibort floor
+        from . import buttons28
+    from . import io_json
+    from . import props
+    from . import t_pose
+    from . import armature
+    from . import source
+    from . import target
+    from . import load
+    from . import retarget
+    from . import fkik
+    from . import simplify
+    from . import action
+    from . import loop
+    from . import edit
+    from . import floor
 
 if bpy.app.version < (2,80,0):
     Region = "TOOLS"
@@ -133,7 +133,7 @@ class MCP_PT_Main(bpy.types.Panel):
                 ins.operator("mcp.retarget_mhx")
 
                 ins.separator()
-                ins.operator("mcp.simportliblify_fcurves")
+                ins.operator("mcp.simplify_fcurves")
                 ins.operator("mcp.rescale_fcurves")
 
 ########################################################################
@@ -179,13 +179,13 @@ class MCP_PT_Options(bpy.types.Panel):
             ins.operator("mcp.rescale_fcurves")
 
         layout.separator()
-        layout.label(text="Simportliblification")
+        layout.label(text="Simplification")
         ins = inset(layout)
-        ins.prop(scn, "McpDoSimportliblify")
+        ins.prop(scn, "McpDoSimplify")
         ins.prop(scn, "McpErrorLoc")
         ins.prop(scn, "McpErrorRot")
-        ins.prop(scn, "McpSimportliblifyVisible")
-        ins.prop(scn, "McpSimportliblifyMarkers")
+        ins.prop(scn, "McpSimplifyVisible")
+        ins.prop(scn, "McpSimplifyMarkers")
 
 
 ########################################################################
@@ -358,7 +358,7 @@ class MCP_PT_MhxSourceBones(bpy.types.Panel):
         layout.prop(scn, "McpSourceRig")
 
         if scn.McpSourceRig:
-            from .source importlibort getSourceArmature
+            from .source import getSourceArmature
 
             amt = getSourceArmature(scn.McpSourceRig)
             if amt:
@@ -415,7 +415,7 @@ class MCP_PT_MhxTargetBones(bpy.types.Panel):
         layout.separator()
 
         if scn.McpTargetRig:
-            from .target importlibort getTargetInfo, TargetBoneNames, findTargetKeys
+            from .target import getTargetInfo, TargetBoneNames, findTargetKeys
 
             (bones, ikBones, tpose, bendTwist) = getTargetInfo(scn.McpTargetRig)
 
@@ -549,7 +549,7 @@ def register():
     loop.initialize()
     props.initialize()
     retarget.initialize()
-    simportliblify.initialize()
+    simplify.initialize()
     source.initialize()
     t_pose.initialize()
     target.initialize()
@@ -567,7 +567,7 @@ def unregister():
     loop.uninitialize()
     props.uninitialize()
     retarget.uninitialize()
-    simportliblify.uninitialize()
+    simplify.uninitialize()
     source.uninitialize()
     t_pose.uninitialize()
     target.uninitialize()

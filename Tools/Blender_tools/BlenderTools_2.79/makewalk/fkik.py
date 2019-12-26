@@ -3,9 +3,6 @@
 
 # ##### BEGIN GPL LICENSE BLOCK #####
 #
-#  Authors:             Thomas Larsson
-#  Script copyright (C) Thomas Larsson 2014
-#
 #  This program is free software; you can redistribute it and/or
 #  modify it under the terms of the GNU General Public License
 #  as published by the Free Software Foundation; either version 2
@@ -22,15 +19,18 @@
 #
 # ##### END GPL LICENSE BLOCK #####
 
+# Project Name:        MakeHuman
+# Product Home Page:   http://www.makehuman.org/
+# Code Home Page:      https://bitbucket.org/MakeHuman/makehuman/
+# Authors:             Thomas Larsson
+# Script copyright (C) MakeHuman Team 2001-2015
+# Coding Standards:    See http://www.makehuman.org/node/165
+
 import bpy
 from mathutils import Vector, Matrix
 from bpy.props import *
 
 from .utils import *
-if bpy.app.version < (2,80,0):
-    from .buttons27 import TypeString
-else:
-    from .buttons28 import TypeString
 
 
 def updateScene():
@@ -43,17 +43,17 @@ def getPoseMatrix(gmat, pb):
     if pb.parent:
         parInv = pb.parent.matrix.inverted()
         parRest = pb.parent.bone.matrix_local
-        return Mult4(restInv, parRest, parInv, gmat)
+        return restInv * (parRest * (parInv * gmat))
     else:
-        return Mult2(restInv, gmat)
+        return restInv * gmat
 
 
 def getGlobalMatrix(mat, pb):
-    gmat = Mult2(pb.bone.matrix_local, mat)
+    gmat = pb.bone.matrix_local * mat
     if pb.parent:
         parMat = pb.parent.matrix
         parRest = pb.parent.bone.matrix_local
-        return Mult3(parMat, parRest.inverted(), gmat)
+        return parMat * (parRest.inverted() * gmat)
     else:
         return gmat
 
@@ -261,11 +261,10 @@ def muteConstraints(constraints, value):
         cns.mute = value
 
 
-def clearAnimation(rig, context, act, type, snapBones):
+def clearAnimation(rig, scn, act, type, snapBones):
     from . import target
 
-    scn = context.scene
-    target.getTargetArmature(rig, context)
+    target.getTargetArmature(rig, scn)
 
     ikBones = []
     if scn.McpFkIkArms:
@@ -318,11 +317,10 @@ def setMhxIk(rig, useArms, useLegs, value):
             rig.data.layers[n] = False
 
 
-def transferMhxToFk(rig, context):
+def transferMhxToFk(rig, scn):
     from . import target
 
-    scn = context.scene
-    target.getTargetArmature(rig, context)
+    target.getTargetArmature(rig, scn)
 
     lArmSnapIk,lArmCnsIk = getSnapBones(rig, "ArmIK", "_L")
     lArmSnapFk,lArmCnsFk = getSnapBones(rig, "ArmFK", "_L")
@@ -363,11 +361,10 @@ def transferMhxToFk(rig, context):
     #muteAllConstraints(rig, False)
 
 
-def transferMhxToIk(rig, context):
+def transferMhxToIk(rig, scn):
     from . import target
 
-    scn = context.scene
-    target.getTargetArmature(rig, context)
+    target.getTargetArmature(rig, scn)
 
     lArmSnapIk,lArmCnsIk = getSnapBones(rig, "ArmIK", "_L")
     lArmSnapFk,lArmCnsFk = getSnapBones(rig, "ArmFK", "_L")
@@ -475,25 +472,9 @@ def setRigifyFKIK(rig, value):
         rig.data.layers[n] = not on
 
 
-def setRigify2FKIK(rig, value):
-    rig.pose.bones["upper_arm_parent.L"]["IK_FK"] = value
-    rig.pose.bones["upper_arm_parent.R"]["IK_FK"] = value
-    rig.pose.bones["thigh_parent.L"]["IK_FK"] = value
-    rig.pose.bones["thigh_parent.R"]["IK_FK"] = value
-    on = (value > 0.5)
-    for n in [8, 11, 14, 17]:
-        rig.data.layers[n] = on
-    for n in [7, 10, 13, 16]:
-        rig.data.layers[n] = not on
-    torso = rig.pose.bones["torso"]
-    torso["head_follow"] = 1.0
-    torso["neck_follow"] = 1.0
-
-
-def transferRigifyToFk(rig, context, delim):
+def transferRigifyToFk(rig, scn):
     from rig_ui import fk2ik_arm, fk2ik_leg
 
-    scn = context.scene
     frames = getActiveFramesBetweenMarkers(rig, scn)
     nFrames = len(frames)
     for n,frame in enumerate(frames):
@@ -503,12 +484,12 @@ def transferRigifyToFk(rig, context, delim):
 
         if scn.McpFkIkArms:
             for suffix in [".L", ".R"]:
-                uarm  = "upper_arm"+delim+"fk"+suffix
-                farm  = "forearm"+delim+"fk"+suffix
-                hand  = "hand"+delim+"fk"+suffix
-                uarmi = "MCH-upper_arm"+delim+"ik"+suffix
-                farmi = "MCH-forearm"+delim+"ik"+suffix
-                handi = "hand"+delim+"ik"+suffix
+                uarm  = "upper_arm.fk"+suffix
+                farm  = "forearm.fk"+suffix
+                hand  = "hand.fk"+suffix
+                uarmi = "MCH-upper_arm.ik"+suffix
+                farmi = "MCH-forearm.ik"+suffix
+                handi = "hand.ik"+suffix
 
                 fk = [uarm,farm,hand]
                 ik = [uarmi,farmi,handi]
@@ -520,13 +501,13 @@ def transferRigifyToFk(rig, context, delim):
 
         if scn.McpFkIkLegs:
             for suffix in [".L", ".R"]:
-                thigh  = "thigh"+delim+"fk"+suffix
-                shin   = "shin"+delim+"fk"+suffix
-                foot   = "foot"+delim+"fk"+suffix
+                thigh  = "thigh.fk"+suffix
+                shin   = "shin.fk"+suffix
+                foot   = "foot.fk"+suffix
                 mfoot  = "MCH-foot"+suffix
-                thighi = "MCH-thigh"+delim+"ik"+suffix
-                shini  = "MCH-shin"+delim+"ik"+suffix
-                footi  = "foot"+delim+"ik"+suffix
+                thighi = "MCH-thigh.ik"+suffix
+                shini  = "MCH-shin.ik"+suffix
+                footi  = "foot.ik"+suffix
                 mfooti = "MCH-foot"+suffix+".001"
 
                 fk = [thigh,shin,foot,mfoot]
@@ -545,10 +526,9 @@ def transferRigifyToFk(rig, context, delim):
             rig.pose.bones["foot.ik"+suffix]["ikfk_switch"] = 0.0
 
 
-def transferRigifyToIk(rig, context, delim):
+def transferRigifyToIk(rig, scn):
     from rig_ui import ik2fk_arm, ik2fk_leg
 
-    scn = context.scene
     frames = getActiveFramesBetweenMarkers(rig, scn)
     nFrames = len(frames)
     for n,frame in enumerate(frames):
@@ -558,13 +538,13 @@ def transferRigifyToIk(rig, context, delim):
 
         if scn.McpFkIkArms:
             for suffix in [".L", ".R"]:
-                uarm  = "upper_arm"+delim+"fk"+suffix
-                farm  = "forearm"+delim+"fk"+suffix
-                hand  = "hand"+delim+"fk"+suffix
-                uarmi = "MCH-upper_arm"+delim+"ik"+suffix
-                farmi = "MCH-forearm"+delim+"ik"+suffix
-                handi = "hand"+delim+"ik"+suffix
-                pole  = "elbow_target"+delim+"ik"+suffix
+                uarm  = "upper_arm.fk"+suffix
+                farm  = "forearm.fk"+suffix
+                hand  = "hand.fk"+suffix
+                uarmi = "MCH-upper_arm.ik"+suffix
+                farmi = "MCH-forearm.ik"+suffix
+                handi = "hand.ik"+suffix
+                pole  = "elbow_target.ik"+suffix
 
                 fk = [uarm,farm,hand]
                 ik = [uarmi,farmi,handi,pole]
@@ -575,15 +555,15 @@ def transferRigifyToIk(rig, context, delim):
 
         if scn.McpFkIkLegs:
             for suffix in [".L", ".R"]:
-                thigh  = "thigh"+delim+"fk"+suffix
-                shin   = "shin"+delim+"fk"+suffix
-                foot   = "foot"+delim+"fk"+suffix
+                thigh  = "thigh.fk"+suffix
+                shin   = "shin.fk"+suffix
+                foot   = "foot.fk"+suffix
                 mfoot  = "MCH-foot"+suffix
-                thighi = "MCH-thigh"+delim+"ik"+suffix
-                shini  = "MCH-shin"+delim+"ik"+suffix
-                footi  = "foot"+delim+"ik"+suffix
-                footroll = "foot_roll"+delim+"ik"+suffix
-                pole   = "knee_target"+delim+"ik"+suffix
+                thighi = "MCH-thigh.ik"+suffix
+                shini  = "MCH-shin.ik"+suffix
+                footi  = "foot.ik"+suffix
+                footroll = "foot_roll.ik"+suffix
+                pole   = "knee_target.ik"+suffix
                 mfooti = "MCH-foot"+suffix+".001"
 
                 fk = [thigh,shin,foot,mfoot]
@@ -634,7 +614,7 @@ def minimizeFCurve(pb, rig, index, frames):
                 kp.co[1] = y0
 
 
-class MCP_OT_LimbsBendPositive(bpy.types.Operator):
+class VIEW3D_OT_McpLimbsBendPositiveButton(bpy.types.Operator):
     bl_idname = "mcp.limbs_bend_positive"
     bl_label = "Bend Limbs Positive"
     bl_description = "Ensure that limbs' X rotation is positive."
@@ -646,7 +626,7 @@ class MCP_OT_LimbsBendPositive(bpy.types.Operator):
         rig = context.object
         try:
             layers = list(rig.data.layers)
-            getTargetArmature(rig, context)
+            getTargetArmature(rig, scn)
             frames = getActiveFramesBetweenMarkers(rig, scn)
             limbsBendPositive(rig, scn.McpBendElbows, scn.McpBendKnees, frames)
             rig.data.layers = layers
@@ -659,7 +639,7 @@ class MCP_OT_LimbsBendPositive(bpy.types.Operator):
 #   Buttons
 #------------------------------------------------------------------------
 
-class MCP_OT_TransferToFk(bpy.types.Operator):
+class VIEW3D_OT_TransferToFkButton(bpy.types.Operator):
     bl_idname = "mcp.transfer_to_fk"
     bl_label = "Transfer IK => FK"
     bl_description = "Transfer IK animation to FK bones"
@@ -673,11 +653,9 @@ class MCP_OT_TransferToFk(bpy.types.Operator):
             rig = context.object
             scn = context.scene
             if isMhxRig(rig):
-                transferMhxToFk(rig, context)
+                transferMhxToFk(rig, scn)
             elif isRigify(rig):
-                transferRigifyToFk(rig, context, ".")
-            elif isRigify2(rig):
-                transferRigifyToFk(rig, context, "_")
+                transferRigifyToFk(rig, scn)
             else:
                 raise MocapError("Can not transfer to FK with this rig")
             endProgress("Transfer to FK completed")
@@ -688,7 +666,7 @@ class MCP_OT_TransferToFk(bpy.types.Operator):
         return{'FINISHED'}
 
 
-class MCP_OT_TransferToIk(bpy.types.Operator):
+class VIEW3D_OT_TransferToIkButton(bpy.types.Operator):
     bl_idname = "mcp.transfer_to_ik"
     bl_label = "Transfer FK => IK"
     bl_description = "Transfer FK animation to IK bones"
@@ -702,11 +680,9 @@ class MCP_OT_TransferToIk(bpy.types.Operator):
             rig = context.object
             scn = context.scene
             if isMhxRig(rig):
-                transferMhxToIk(rig, context)
+                transferMhxToIk(rig, scn)
             elif isRigify(rig):
-                transferRigifyToIk(rig, context, ".")
-            elif isRigify2(rig):
-                transferRigifyToIk(rig, context, "_")
+                transferRigifyToIk(rig, scn)
             else:
                 raise MocapError("Can not transfer to IK with this rig")
             endProgress("Transfer to IK completed")
@@ -717,11 +693,12 @@ class MCP_OT_TransferToIk(bpy.types.Operator):
         return{'FINISHED'}
 
 
-class MCP_OT_ClearAnimation(bpy.types.Operator, TypeString):
+class VIEW3D_OT_ClearAnimationButton(bpy.types.Operator):
     bl_idname = "mcp.clear_animation"
     bl_label = "Clear Animation"
     bl_description = "Clear Animation For FK or IK Bones"
     bl_options = {'UNDO'}
+    type = StringProperty()
 
     def execute(self, context):
         use_global_undo = context.user_preferences.edit.use_global_undo
@@ -737,14 +714,14 @@ class MCP_OT_ClearAnimation(bpy.types.Operator, TypeString):
                 raise MocapError("Rig has no action")
 
             if isMhxRig(rig):
-                clearAnimation(rig, context, act, self.type, SnapBonesAlpha8)
+                clearAnimation(rig, scn, act, self.type, SnapBonesAlpha8)
                 if self.type == "FK":
                     value = 1.0
                 else:
                     value = 0.0
                 setMhxIk(rig, scn.McpFkIkArms, scn.McpFkIkLegs, value)
             elif isRigify(rig):
-                clearAnimation(rig, context, act, self.type, SnapBonesRigify)
+                clearAnimation(rig, scn, act, self.type, SnapBonesRigify)
             else:
                 raise MocapError("Can not clear %s animation with this rig" % self.type)
             endProgress("Animation cleared")
@@ -773,7 +750,7 @@ def printHand(context):
         print(footIk.matrix)
 
 
-class MCP_OT_PrintHands(bpy.types.Operator):
+class VIEW3D_OT_PrintHandsButton(bpy.types.Operator):
     bl_idname = "mcp.print_hands"
     bl_label = "Print Hands"
     bl_options = {'UNDO'}
@@ -782,24 +759,4 @@ class MCP_OT_PrintHands(bpy.types.Operator):
         printHand(context)
         return{'FINISHED'}
 
-#----------------------------------------------------------
-#   Initialize
-#----------------------------------------------------------
-
-classes = [
-    MCP_OT_LimbsBendPositive,
-    MCP_OT_TransferToFk,
-    MCP_OT_TransferToIk,
-    MCP_OT_ClearAnimation,
-    MCP_OT_PrintHands,
-]
-
-def initialize():
-    for cls in classes:
-        bpy.utils.register_class(cls)
-
-
-def uninitialize():
-    for cls in classes:
-        bpy.utils.unregister_class(cls)
 

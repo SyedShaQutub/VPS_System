@@ -3,9 +3,6 @@
 
 # ##### BEGIN GPL LICENSE BLOCK #####
 #
-#  Authors:             Thomas Larsson
-#  Script copyright (C) Thomas Larsson 2014
-#
 #  This program is free software; you can redistribute it and/or
 #  modify it under the terms of the GNU General Public License
 #  as published by the Free Software Foundation; either version 2
@@ -22,6 +19,13 @@
 #
 # ##### END GPL LICENSE BLOCK #####
 
+# Project Name:        MakeHuman
+# Product Home Page:   http://www.makehuman.org/
+# Code Home Page:      https://bitbucket.org/MakeHuman/makehuman/
+# Authors:             Thomas Larsson
+# Script copyright (C) MakeHuman Team 2001-2015
+# Coding Standards:    See http://www.makehuman.org/node/165
+
 import bpy
 from bpy.props import BoolProperty
 from mathutils import Matrix, Vector
@@ -32,11 +36,11 @@ from . import fkik
 #  Plane
 #-------------------------------------------------------------
 
-def getRigAndPlane(context):
+def getRigAndPlane(scn):
     rig = None
     plane = None
-    for ob in getSceneObjects(context):
-        if getSelected(ob):
+    for ob in scn.objects:
+        if ob.select:
             if ob.type == 'ARMATURE':
                 if rig:
                     raise MocapError("Two armatures selected: %s and %s" % (rig.name, ob.name))
@@ -103,7 +107,7 @@ def addOffset(pb, offset, ez):
 
 def toesBelowBall(context):
     scn = context.scene
-    rig,plane = getRigAndPlane(context)
+    rig,plane = getRigAndPlane(scn)
     try:
         useIk = rig["MhaLegIk_L"] or rig["MhaLegIk_R"]
     except KeyError:
@@ -115,20 +119,19 @@ def toesBelowBall(context):
     startProgress("Keep toes down")
     frames = getActiveFramesBetweenMarkers(rig, scn)
     print("Left toe")
-    toeBelowBall(context, frames, rig, plane, ".L")
+    toeBelowBall(scn, frames, rig, plane, ".L")
     print("Right toe")
-    toeBelowBall(context, frames, rig, plane, ".R")
+    toeBelowBall(scn, frames, rig, plane, ".R")
     endProgress("Toes kept down")
     rig.data.layers = layers
 
 
-def toeBelowBall(context, frames, rig, plane, suffix):
+def toeBelowBall(scn, frames, rig, plane, suffix):
     from .retarget import getLocks
 
-    scn = context.scene
     foot,toe,mBall,mToe,mHeel = getFkFeetBones(rig, suffix)
     ez,origin,rot = getPlaneInfo(plane)
-    order,lock = getLocks(toe, context)
+    order,lock = getLocks(toe, scn)
     factor = 1.0/toe.length
     nFrames = len(frames)
     if mBall:
@@ -138,7 +141,7 @@ def toeBelowBall(context, frames, rig, plane, suffix):
             zToe = getProjection(mToe.matrix.col[3], ez)
             zBall = getProjection(mBall.matrix.col[3], ez)
             if zToe > zBall:
-                pmat = offsetToeRotation(toe, ez, factor, order, lock, context)
+                pmat = offsetToeRotation(toe, ez, factor, order, lock, scn)
             else:
                 pmat = fkik.getPoseMatrix(toe.matrix, toe)
             pmat = keepToeRotationNegative(pmat, scn)
@@ -149,14 +152,14 @@ def toeBelowBall(context, frames, rig, plane, suffix):
             showProgress(n, frame, nFrames)
             dzToe = getProjection(toe.matrix.col[1], ez)
             if dzToe > 0:
-                pmat = offsetToeRotation(toe, ez, factor, order, lock, context)
+                pmat = offsetToeRotation(toe, ez, factor, order, lock, scn)
             else:
                 pmat = fkik.getPoseMatrix(toe.matrix, toe)
             pmat = keepToeRotationNegative(pmat, scn)
             fkik.insertRotation(toe, pmat)
 
 
-def offsetToeRotation(toe, ez, factor, order, lock, context):
+def offsetToeRotation(toe, ez, factor, order, lock, scn):
     from .retarget import correctMatrixForLocks
 
     mat = toe.matrix.to_3x3()
@@ -173,7 +176,7 @@ def offsetToeRotation(toe, ez, factor, order, lock, context):
     gmat = mat.to_4x4()
     gmat.col[3] = toe.matrix.col[3]
     pmat = fkik.getPoseMatrix(gmat, toe)
-    return correctMatrixForLocks(pmat, order, lock, toe, context.scene.McpUseLimits)
+    return correctMatrixForLocks(pmat, order, lock, toe, scn.McpUseLimits)
 
 
 def keepToeRotationNegative(pmat, scn):
@@ -186,7 +189,7 @@ def keepToeRotationNegative(pmat, scn):
     return pmat
 
 
-class MCP_OT_OffsetToe(bpy.types.Operator):
+class VIEW3D_OT_McpOffsetToeButton(bpy.types.Operator):
     bl_idname = "mcp.offset_toe"
     bl_label = "Offset Toes"
     bl_description = "Keep toes below balls"
@@ -194,7 +197,7 @@ class MCP_OT_OffsetToe(bpy.types.Operator):
 
     def execute(self, context):
         from .target import getTargetArmature
-        getTargetArmature(context.object, context)
+        getTargetArmature(context.object, context.scene)
         try:
             toesBelowBall(context)
         except MocapError:
@@ -209,7 +212,7 @@ class MCP_OT_OffsetToe(bpy.types.Operator):
 def floorFoot(context):
     startProgress("Keep feet above floor")
     scn = context.scene
-    rig,plane = getRigAndPlane(context)
+    rig,plane = getRigAndPlane(scn)
     try:
         useIk = rig["MhaLegIk_L"] or rig["MhaLegIk_R"]
     except KeyError:
@@ -342,7 +345,7 @@ def getIkOffset(rig, ez, origin, leg):
     return offset
 
 
-class MCP_OT_FloorFoot(bpy.types.Operator):
+class VIEW3D_OT_McpFloorFootButton(bpy.types.Operator):
     bl_idname = "mcp.floor_foot"
     bl_label = "Keep Feet Above Floor"
     bl_description = "Keep Feet Above Plane"
@@ -350,27 +353,10 @@ class MCP_OT_FloorFoot(bpy.types.Operator):
 
     def execute(self, context):
         from .target import getTargetArmature
-        getTargetArmature(context.object, context)
+        getTargetArmature(context.object, context.scene)
         try:
             floorFoot(context)
         except MocapError:
             bpy.ops.mcp.error('INVOKE_DEFAULT')
         return{'FINISHED'}
 
-#----------------------------------------------------------
-#   Initialize
-#----------------------------------------------------------
-
-classes = [
-    MCP_OT_OffsetToe,
-    MCP_OT_FloorFoot,
-]
-
-def initialize():
-    for cls in classes:
-        bpy.utils.register_class(cls)
-
-
-def uninitialize():
-    for cls in classes:
-        bpy.utils.unregister_class(cls)

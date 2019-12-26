@@ -3,9 +3,6 @@
 
 # ##### BEGIN GPL LICENSE BLOCK #####
 #
-#  Authors:             Thomas Larsson
-#  Script copyright (C) Thomas Larsson 2014
-#
 #  This program is free software; you can redistribute it and/or
 #  modify it under the terms of the GNU General Public License
 #  as published by the Free Software Foundation; either version 2
@@ -21,6 +18,13 @@
 #  Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301, USA.
 #
 # ##### END GPL LICENSE BLOCK #####
+
+# Project Name:        MakeHuman
+# Product Home Page:   http://www.makehuman.org/
+# Code Home Page:      https://bitbucket.org/MakeHuman/makehuman/
+# Authors:             Thomas Larsson
+# Script copyright (C) MakeHuman Team 2001-2015
+# Coding Standards:    See http://www.makehuman.org/node/165
 
 import bpy
 from math import pi, sqrt
@@ -51,7 +55,7 @@ def normalizeRotCurves(scn, rig, fcurves, frames):
 #
 #   loopFCurves(context):
 #   loopFCurve(fcu, minTime, maxTime, scn):
-#   class MCP_OT_LoopFCurves(bpy.types.Operator):
+#   class VIEW3D_OT_McpLoopFCurvesButton(bpy.types.Operator):
 #
 
 def loopFCurves(context):
@@ -104,7 +108,7 @@ def loopFCurves(context):
                 scn.frame_set(frame)
                 head = heads[frame] - (frame-minTime)*offs
                 diff = head - pb.bone.head_local
-                pb.location = Mult2(restInv, diff)
+                pb.location = restInv * diff
                 pb.keyframe_insert("location", group=pb.name)
 
     return
@@ -158,7 +162,7 @@ def loopFCurve(fcu, t0, tn, scn):
         fcu.keyframe_points.insert(frame=t, value=v)
     return
 
-class MCP_OT_LoopFCurves(bpy.types.Operator):
+class VIEW3D_OT_McpLoopFCurvesButton(bpy.types.Operator):
     bl_idname = "mcp.loop_fcurves"
     bl_label = "Loop F-curves"
     bl_description = "Make the beginning and end of the selected time range connect smoothly. Use before repeating."
@@ -204,7 +208,7 @@ def repeatFCurves(context, nRepeats):
     endProgress("F-curves repeated %d times" % nRepeats)
 
 
-class MCP_OT_RepeatFCurves(bpy.types.Operator):
+class VIEW3D_OT_McpRepeatFCurvesButton(bpy.types.Operator):
     bl_idname = "mcp.repeat_fcurves"
     bl_label = "Repeat Animation"
     bl_description = "Repeat the part of the animation between selected markers n times"
@@ -260,7 +264,7 @@ def stitchActions(context):
     locks = {}
     for bname in bmats2.keys():
         pb = rig.pose.bones[bname]
-        orders[bname],locks[bname] = getLocks(pb, context)
+        orders[bname],locks[bname] = getLocks(pb, scn)
 
     nFrames = len(frames)
     for n,frame in enumerate(frames):
@@ -318,7 +322,7 @@ def getActionExtent(act):
     return first,last
 
 
-class MCP_OT_StitchActions(bpy.types.Operator):
+class VIEW3D_OT_McpStitchActionsButton(bpy.types.Operator):
     bl_idname = "mcp.stitch_actions"
     bl_label = "Stitch Actions"
     bl_description = "Stitch two action together seamlessly"
@@ -335,8 +339,8 @@ class MCP_OT_StitchActions(bpy.types.Operator):
 
 
 #
-#   shiftBoneFCurves(rig, context):
-#   class MCP_OT_ShiftBoneFCurves(bpy.types.Operator):
+#   shiftBoneFCurves(rig, scn):
+#   class VIEW3D_OT_McpShiftBoneFCurvesButton(bpy.types.Operator):
 #
 
 def getBaseMatrices(act, frames, rig, useAll):
@@ -345,10 +349,7 @@ def getBaseMatrices(act, frames, rig, useAll):
     eulerFcurves = {}
     for fcu in act.fcurves:
         (bname, mode) = fCurveIdentity(fcu)
-        if bname in rig.pose.bones.keys():
-            pb = rig.pose.bones[bname]
-        else:
-            continue
+        pb = rig.pose.bones[bname]
         if useAll or pb.bone.select:
             if mode == "location":
                 try:
@@ -405,16 +406,15 @@ def getBaseMatrices(act, frames, rig, useAll):
             mats = []
             for n,rmat in enumerate(rmats):
                 tmat = tmats[n]
-                mats.append( Mult2(tmat, rmat) )
+                mats.append( tmat*rmat )
             basemats[bname] = mats
 
     return basemats, useLoc
 
 
-def shiftBoneFCurves(rig, context):
+def shiftBoneFCurves(rig, scn):
     from .retarget import getLocks, correctMatrixForLocks
 
-    scn = context.scene
     frames = [scn.frame_current] + getActiveFrames(rig)
     nFrames = len(frames)
     act = getAction(rig)
@@ -428,15 +428,15 @@ def shiftBoneFCurves(rig, context):
     for bname,bmats in basemats.items():
         pb = rig.pose.bones[bname]
         bmat = bmats[0]
-        deltaMat[pb.name] = Mult2(pb.matrix_basis, bmat.inverted())
-        orders[pb.name], locks[pb.name] = getLocks(pb, context)
+        deltaMat[pb.name] = pb.matrix_basis * bmat.inverted()
+        orders[pb.name], locks[pb.name] = getLocks(pb, scn)
 
     for n,frame in enumerate(frames[1:]):
         scn.frame_set(frame)
         showProgress(n, frame, nFrames)
         for bname,bmats in basemats.items():
             pb = rig.pose.bones[bname]
-            mat = Mult2(deltaMat[pb.name], bmats[n+1])
+            mat = deltaMat[pb.name] * bmats[n+1]
             mat = correctMatrixForLocks(mat, orders[bname], locks[bname], pb, scn.McpUseLimits)
             if useLoc[bname]:
                 insertLocation(pb, mat)
@@ -447,7 +447,7 @@ def printmat(mat):
     print("   (%.4f %.4f %.4f %.4f)" % tuple(mat.to_quaternion()))
 
 
-class MCP_OT_ShiftBoneFCurves(bpy.types.Operator):
+class VIEW3D_OT_McpShiftBoneFCurvesButton(bpy.types.Operator):
     bl_idname = "mcp.shift_bone"
     bl_label = "Shift Animation"
     bl_description = "Shift the animation globally for selected boens"
@@ -456,7 +456,7 @@ class MCP_OT_ShiftBoneFCurves(bpy.types.Operator):
     def execute(self, context):
         try:
             startProgress("Shift animation")
-            shiftBoneFCurves(context.object, context)
+            shiftBoneFCurves(context.object, context.scene)
             endProgress("Animation shifted")
         except MocapError:
             bpy.ops.mcp.error('INVOKE_DEFAULT')
@@ -492,7 +492,7 @@ def fixateBoneFCurves(rig, scn):
                     kp.co[1] = value
 
 
-class MCP_OT_FixateBoneFCurves(bpy.types.Operator):
+class VIEW3D_OT_McpFixateBoneFCurvesButton(bpy.types.Operator):
     bl_idname = "mcp.fixate_bone"
     bl_label = "Fixate Bone Location"
     bl_description = "Keep bone location fixed (local coordinates)"
@@ -506,24 +506,3 @@ class MCP_OT_FixateBoneFCurves(bpy.types.Operator):
         except MocapError:
             bpy.ops.mcp.error('INVOKE_DEFAULT')
         return{'FINISHED'}
-
-#----------------------------------------------------------
-#   Initialize
-#----------------------------------------------------------
-
-classes = [
-    MCP_OT_LoopFCurves,
-    MCP_OT_RepeatFCurves,
-    MCP_OT_StitchActions,
-    MCP_OT_ShiftBoneFCurves,
-    MCP_OT_FixateBoneFCurves,
-]
-
-def initialize():
-    for cls in classes:
-        bpy.utils.register_class(cls)
-
-
-def uninitialize():
-    for cls in classes:
-        bpy.utils.unregister_class(cls)

@@ -3,9 +3,6 @@
 
 # ##### BEGIN GPL LICENSE BLOCK #####
 #
-#  Authors:             Thomas Larsson
-#  Script copyright (C) Thomas Larsson 2014
-#
 #  This program is free software; you can redistribute it and/or
 #  modify it under the terms of the GNU General Public License
 #  as published by the Free Software Foundation; either version 2
@@ -21,6 +18,13 @@
 #  Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301, USA.
 #
 # ##### END GPL LICENSE BLOCK #####
+
+# Project Name:        MakeHuman
+# Product Home Page:   http://www.makehuman.org/
+# Code Home Page:      https://bitbucket.org/MakeHuman/makehuman/
+# Authors:             Thomas Larsson
+# Script copyright (C) MakeHuman Team 2001-2015
+# Coding Standards:    See http://www.makehuman.org/node/165
 
 import bpy
 from math import pi
@@ -258,10 +262,10 @@ def addFCurveInserts(fcu, inserts, limitData):
 
 ########################################################################
 #
-#   class MCP_OT_SimplifyFCurves(bpy.types.Operator):
+#   class VIEW3D_OT_McpSimplifyFCurvesButton(bpy.types.Operator):
 #
 
-class MCP_OT_SimplifyFCurves(bpy.types.Operator):
+class VIEW3D_OT_McpSimplifyFCurvesButton(bpy.types.Operator):
     bl_idname = "mcp.simplify_fcurves"
     bl_label = "Simplify FCurves"
     bl_options = {'UNDO'}
@@ -274,7 +278,7 @@ class MCP_OT_SimplifyFCurves(bpy.types.Operator):
             bpy.ops.mcp.error('INVOKE_DEFAULT')
         return{'FINISHED'}
 
-class MCP_OT_RescaleFCurves(bpy.types.Operator):
+class VIEW3D_OT_McpRescaleFCurvesButton(bpy.types.Operator):
     bl_idname = "mcp.rescale_fcurves"
     bl_label = "Rescale FCurves"
     bl_options = {'UNDO'}
@@ -287,20 +291,3 @@ class MCP_OT_RescaleFCurves(bpy.types.Operator):
             bpy.ops.mcp.error('INVOKE_DEFAULT')
         return{'FINISHED'}
 
-#----------------------------------------------------------
-#   Initialize
-#----------------------------------------------------------
-
-classes = [
-    MCP_OT_SimplifyFCurves,
-    MCP_OT_RescaleFCurves,
-]
-
-def initialize():
-    for cls in classes:
-        bpy.utils.register_class(cls)
-
-
-def uninitialize():
-    for cls in classes:
-        bpy.utils.unregister_class(cls)

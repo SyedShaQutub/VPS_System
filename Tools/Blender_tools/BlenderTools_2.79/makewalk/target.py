@@ -3,9 +3,6 @@
 
 # ##### BEGIN GPL LICENSE BLOCK #####
 #
-#  Authors:             Thomas Larsson
-#  Script copyright (C) Thomas Larsson 2014
-#
 #  This program is free software; you can redistribute it and/or
 #  modify it under the terms of the GNU General Public License
 #  as published by the Free Software Foundation; eimcp.r version 2
@@ -22,8 +19,18 @@
 #
 # ##### END GPL LICENSE BLOCK #####
 
+# Project Name:        MakeHuman
+# Product Home Page:   http://www.makehuman.org/
+# Code Home Page:      https://bitbucket.org/MakeHuman/makehuman/
+# Authors:             Thomas Larsson
+# Script copyright (C) MakeHuman Team 2001-2015
+# Coding Standards:    See http://www.makehuman.org/node/165
+
+
+
 import bpy
 from bpy.props import *
+from bpy_extras.io_utils import ExportHelper
 import math
 import os
 
@@ -31,10 +38,6 @@ from . import utils
 from . import t_pose
 from .utils import *
 from .armature import CArmature
-if bpy.app.version < (2,80,0):
-    from .buttons27 import SaveTargetExport
-else:
-    from .buttons28 import SaveTargetExport
 
 #
 #   Global variables
@@ -47,7 +50,6 @@ _targetArmatures = {}
 _trgArmature = None
 _trgArmatureEnums =[("Automatic", "Automatic", "Automatic")]
 _ikBones = []
-_bendTwist = {}
 
 def getTargetInfo(rigname):
     global _targetInfo
@@ -65,16 +67,15 @@ def ensureTargetInited(scn):
         initTargets(scn)
 
 #
-#   getTargetArmature(rig, context):
+#   getTargetArmature(rig, scn):
 #
 
-def getTargetArmature(rig, context):
-    global _target, _targetArmatures, _targetInfo, _trgArmature, _ikBones, _bendTwist
+def getTargetArmature(rig, scn):
+    global _target, _targetArmatures, _targetInfo, _trgArmature, _ikBones
 
-    scn = context.scene
     setCategory("Identify Target Rig")
     ensureTargetInited(scn)
-    putInRestPose(rig, True)
+    selectAndSetRestPose(rig, scn)
     bones = rig.data.bones.keys()
 
     if scn.McpAutoTargetRig:
@@ -100,7 +101,7 @@ def getTargetArmature(rig, context):
 
         _ikBones = []
         rig.McpTPoseFile = ""
-        _targetInfo[name] = (boneAssoc, _ikBones, rig.McpTPoseFile, _bendTwist)
+        _targetInfo[name] = (boneAssoc, _ikBones, rig.McpTPoseFile)
         clearCategory()
         return boneAssoc
 
@@ -108,7 +109,7 @@ def getTargetArmature(rig, context):
         setCategory("Manual Target Rig")
         scn.McpTargetRig = name
         _target = name
-        (boneAssoc, _ikBones, rig.McpTPoseFile, _bendTwist) = _targetInfo[name]
+        (boneAssoc, _ikBones, rig.McpTPoseFile) = _targetInfo[name]
         if not testTargetRig(name, rig, boneAssoc):
             print("WARNING:\nTarget armature %s does not match armature %s.\nBones:" % (rig.name, name))
             for pair in boneAssoc:
@@ -136,22 +137,18 @@ def guessTargetArmatureFromList(rig, bones, scn):
 
     if isMhxRig(rig):
         return "MHX"
-    elif isMhOfficialRig(rig):
-        return "MH-Official"
+    elif isDefaultRig(rig):
+        return "Default"
+    elif isMbRig(rig):
+        return "MB"
     elif isRigify(rig):
         return "Rigify"
-    elif isRigify2(rig):
-        return "Rigify2"
     elif isMhx7Rig(rig):
         return "MH-alpha7"
-    elif isGenesis(rig):
-        return "Genesis"
-    elif isGenesis3(rig):
-        return "Genesis3"
     elif False:
         for name in _targetInfo.keys():
-            if name not in ["MHX", "MH-Official", "Rigify", "Rigify2", "MH-alpha7", "Genesis", "Genesis3"]:
-                (boneAssoc, _ikBones, _tpose, _bendTwist) = _targetInfo[name]
+            if name not in ["MHX", "Default", "MB", "Rigify", "MH-alpha7"]:
+                (boneAssoc, _ikBones, _tpose) = _targetInfo[name]
                 if testTargetRig(name, rig, boneAssoc):
                     return name
     else:
@@ -230,7 +227,7 @@ TargetBoneNames = [
 
 def initTargets(scn):
     global _targetArmatures, _targetInfo, _trgArmatureEnums
-    _targetInfo = { "Automatic" : ([], [], "", {}) }
+    _targetInfo = { "Automatic" : ([], [], "") }
     _targetArmatures = { "Automatic" : CArmature() }
     path = os.path.join(os.path.dirname(__file__), "target_rigs")
     for fname in os.listdir(path):
@@ -261,7 +258,6 @@ def readTrgArmature(file, name):
     bones = []
     tpose = ""
     ikbones = []
-    bendtwist = []
     for line in fp:
         words = line.split()
         if len(words) > 0:
@@ -274,8 +270,6 @@ def readTrgArmature(file, name):
                 status = 1
             elif key == "ikbones:":
                 status = 2
-            elif key == "bendtwist:":
-                status = 3
             elif key == "t-pose:":
                 status = 0
                 tpose = os.path.join("target_rigs", words[1])
@@ -285,14 +279,11 @@ def readTrgArmature(file, name):
                 bones.append( (words[0], nameOrNone(words[1])) )
             elif status == 2:
                 ikbones.append( (words[0], nameOrNone(words[1])) )
-            elif status == 3:
-                bendtwist.append( (words[0], nameOrNone(words[1])) )
-
     fp.close()
-    return (name, (bones,ikbones,tpose,bendtwist))
+    return (name, (bones,ikbones,tpose))
 
 
-class MCP_OT_InitTargets(bpy.types.Operator):
+class VIEW3D_OT_McpInitTargetsButton(bpy.types.Operator):
     bl_idname = "mcp.init_targets"
     bl_label = "Init Target Panel"
     bl_description = "(Re)load all .trg files in the target_rigs directory."
@@ -306,7 +297,7 @@ class MCP_OT_InitTargets(bpy.types.Operator):
         return{'FINISHED'}
 
 
-class MCP_OT_GetTargetRig(bpy.types.Operator):
+class VIEW3D_OT_McpGetTargetRigButton(bpy.types.Operator):
     bl_idname = "mcp.get_target_rig"
     bl_label = "Identify Target Rig"
     bl_description = "Identify the target rig type of the active armature."
@@ -318,7 +309,7 @@ class MCP_OT_GetTargetRig(bpy.types.Operator):
         scn = context.scene
         data = changeTargetData(rig, scn)
         try:
-            getTargetArmature(rig, context)
+            getTargetArmature(rig, scn)
         except MocapError:
             bpy.ops.mcp.error('INVOKE_DEFAULT')
         finally:
@@ -350,11 +341,15 @@ def saveTargetFile(filepath, context):
         saveTPose(context, tposePath)
 
 
-class MCP_OT_SaveTargetFile(bpy.types.Operator, SaveTargetExport):
+class VIEW3D_OT_McpSaveTargetFileButton(bpy.types.Operator, ExportHelper):
     bl_idname = "mcp.save_target_file"
     bl_label = "Save Target File"
     bl_description = "Save a .trg file for this character"
     bl_options = {'UNDO'}
+
+    filename_ext = ".trg"
+    filter_glob = StringProperty(default="*.trg", options={'HIDDEN'})
+    filepath = StringProperty(name="File Path", description="Filepath to target file", maxlen=1024, default="")
 
     def execute(self, context):
         try:
@@ -366,22 +361,3 @@ class MCP_OT_SaveTargetFile(bpy.types.Operator, SaveTargetExport):
     def invoke(self, context, event):
         context.window_manager.fileselect_add(self)
         return {'RUNNING_MODAL'}
-
-#----------------------------------------------------------
-#   Initialize
-#----------------------------------------------------------
-
-classes = [
-    MCP_OT_InitTargets,
-    MCP_OT_GetTargetRig,
-    MCP_OT_SaveTargetFile,
-]
-
-def initialize():
-    for cls in classes:
-        bpy.utils.register_class(cls)
-
-
-def uninitialize():
-    for cls in classes:
-        bpy.utils.unregister_class(cls)

@@ -3,9 +3,6 @@
 
 # ##### BEGIN GPL LICENSE BLOCK #####
 #
-#  Authors:             Thomas Larsson
-#  Script copyright (C) Thomas Larsson 2014
-#
 #  This program is free software; you can redistribute it and/or
 #  modify it under the terms of the GNU General Public License
 #  as published by the Free Software Foundation; either version 2
@@ -22,6 +19,13 @@
 #
 # ##### END GPL LICENSE BLOCK #####
 
+# Project Name:        MakeHuman
+# Product Home Page:   http://www.makehuman.org/
+# Code Home Page:      https://bitbucket.org/MakeHuman/makehuman/
+# Authors:             Thomas Larsson
+# Script copyright (C) MakeHuman Team 2001-2013
+# Coding Standards:    See http://www.makehuman.org/node/165
+
 """
 Abstract
 Tool for loading bvh files onto the MHX rig in Blender 2.5x
@@ -36,12 +40,12 @@ Alternatively, run the script in the script editor (Alt-P), and access from UI p
 bl_info = {
     "name": "MakeWalk",
     "author": "Thomas Larsson",
-    "version": (1,6),
-    "blender": (2,80,0),
+    "version": (1,1,0),
+    "blender": (2,7,2),
     "location": "View3D > Tools > MakeWalk",
-    "description": "Mocap retargeting tool",
+    "description": "Mocap tool for MakeHuman character",
     "warning": "",
-    'wiki_url': "http://thomasmakehuman.wordpress.com/makewalk/",
+    'wiki_url': "http://web.archive.org/web/20150317163903/www.makehuman.org/doc/node/makewalk.html",
     "category": "MakeHuman"}
 
 # To support reload properly, try to access a package var, if it's there, reload everything
@@ -49,10 +53,6 @@ if "bpy" in locals():
     print("Reloading MakeWalk")
     import imp
     imp.reload(utils)
-    if bpy.app.version < (2,80,0):
-        imp.reload(buttons27)
-    else:
-        imp.reload(buttons28)
     imp.reload(io_json)
     imp.reload(props)
     imp.reload(t_pose)
@@ -69,13 +69,11 @@ if "bpy" in locals():
     imp.reload(floor)
 else:
     print("Loading MakeWalk")
-    import bpy
+    import bpy, os
+    from bpy_extras.io_utils import ImportHelper
+    from bpy.props import *
 
     from . import utils
-    if bpy.app.version < (2,80,0):
-        from . import buttons27
-    else:
-        from . import buttons28
     from . import io_json
     from . import props
     from . import t_pose
@@ -91,26 +89,22 @@ else:
     from . import edit
     from . import floor
 
-if bpy.app.version < (2,80,0):
-    Region = "TOOLS"
-else:
-    Region = "UI"
 
 def inset(layout):
-    split = utils.splitLayout(layout, 0.05)
-    split.label(text="")
+    split = layout.split(0.05)
+    split.label("")
     return split.column()
 
 ########################################################################
 #
-#   class Main(bpy.types.Panel):
+#   class MainPanel(bpy.types.Panel):
 #
 
-class MCP_PT_Main(bpy.types.Panel):
+class MainPanel(bpy.types.Panel):
     bl_category = "MakeWalk"
-    bl_label = "MakeWalk v %d.%d: Main" % bl_info["version"]
+    bl_label = "MakeWalk v %d.%d.%d: Main" % bl_info["version"]
     bl_space_type = "VIEW_3D"
-    bl_region_type = Region
+    bl_region_type = "TOOLS"
 
     def draw(self, context):
         layout = self.layout
@@ -138,14 +132,14 @@ class MCP_PT_Main(bpy.types.Panel):
 
 ########################################################################
 #
-#   class MCP_PT_Options(bpy.types.Panel):
+#   class OptionsPanel(bpy.types.Panel):
 #
 
-class MCP_PT_Options(bpy.types.Panel):
+class OptionsPanel(bpy.types.Panel):
     bl_category = "MakeWalk"
-    bl_label = "Options"
+    bl_label = "MakeWalk: Options"
     bl_space_type = "VIEW_3D"
-    bl_region_type = Region
+    bl_region_type = "TOOLS"
     bl_options = {'DEFAULT_CLOSED'}
 
     @classmethod
@@ -164,11 +158,12 @@ class MCP_PT_Options(bpy.types.Panel):
         layout.prop(scn, "McpClearLocks")
         layout.prop(scn, 'McpAutoSourceRig')
         layout.prop(scn, 'McpAutoTargetRig')
+        layout.prop(scn, 'McpApplyObjectTransforms')
         layout.prop(scn, "McpIgnoreHiddenLayers")
         layout.prop(scn, "McpDoBendPositive")
 
         layout.separator()
-        layout.label(text="SubSample and Rescale")
+        layout.label("SubSample and Rescale")
         ins = inset(layout)
         ins.prop(scn, "McpDefaultSS")
         if not scn.McpDefaultSS:
@@ -179,7 +174,7 @@ class MCP_PT_Options(bpy.types.Panel):
             ins.operator("mcp.rescale_fcurves")
 
         layout.separator()
-        layout.label(text="Simplification")
+        layout.label("Simplification")
         ins = inset(layout)
         ins.prop(scn, "McpDoSimplify")
         ins.prop(scn, "McpErrorLoc")
@@ -190,14 +185,14 @@ class MCP_PT_Options(bpy.types.Panel):
 
 ########################################################################
 #
-#   class MCP_PT_Edit(bpy.types.Panel):
+#   class EditPanel(bpy.types.Panel):
 #
 
-class MCP_PT_Edit(bpy.types.Panel):
+class EditPanel(bpy.types.Panel):
     bl_category = "MakeWalk"
-    bl_label = "Edit Actions"
+    bl_label = "MakeWalk: Edit Actions"
     bl_space_type = "VIEW_3D"
-    bl_region_type = Region
+    bl_region_type = "TOOLS"
     bl_options = {'DEFAULT_CLOSED'}
 
     @classmethod
@@ -331,14 +326,14 @@ class MCP_PT_Edit(bpy.types.Panel):
 
 ########################################################################
 #
-#    class MCP_PT_MhxSourceBones(bpy.types.Panel):
+#    class MhxSourceBonesPanel(bpy.types.Panel):
 #
 
-class MCP_PT_MhxSourceBones(bpy.types.Panel):
+class MhxSourceBonesPanel(bpy.types.Panel):
     bl_category = "MakeWalk"
-    bl_label = "Source armature"
+    bl_label = "MakeWalk: Source armature"
     bl_space_type = "VIEW_3D"
-    bl_region_type = Region
+    bl_region_type = "TOOLS"
     bl_options = {'DEFAULT_CLOSED'}
 
     @classmethod
@@ -372,19 +367,19 @@ class MCP_PT_MhxSourceBones(bpy.types.Panel):
                     bone = source.findSourceKey(mhx, bones)
                     if bone:
                         row = box.row()
-                        row.label(text=text)
-                        row.label(text=bone)
+                        row.label(text)
+                        row.label(bone)
 
 ########################################################################
 #
-#    class MCP_PT_MhxTargetBones(bpy.types.Panel):
+#    class MhxTargetBonesPanel(bpy.types.Panel):
 #
 
-class MCP_PT_MhxTargetBones(bpy.types.Panel):
+class MhxTargetBonesPanel(bpy.types.Panel):
     bl_category = "MakeWalk"
-    bl_label = "Target armature"
+    bl_label = "MakeWalk: Target armature"
     bl_space_type = "VIEW_3D"
-    bl_region_type = Region
+    bl_region_type = "TOOLS"
     bl_options = {'DEFAULT_CLOSED'}
 
     @classmethod
@@ -417,9 +412,9 @@ class MCP_PT_MhxTargetBones(bpy.types.Panel):
         if scn.McpTargetRig:
             from .target import getTargetInfo, TargetBoneNames, findTargetKeys
 
-            (bones, ikBones, tpose, bendTwist) = getTargetInfo(scn.McpTargetRig)
+            (bones, ikBones, tpose) = getTargetInfo(scn.McpTargetRig)
 
-            layout.label(text="FK bones")
+            layout.label("FK bones")
             box = layout.box()
             for boneText in TargetBoneNames:
                 if not boneText:
@@ -430,44 +425,34 @@ class MCP_PT_MhxTargetBones(bpy.types.Panel):
                 if bnames:
                     for bname in bnames:
                         row = box.row()
-                        row.label(text=text)
-                        row.label(text=bname)
+                        row.label(text)
+                        row.label(bname)
                 else:
                     row = box.row()
-                    row.label(text=text)
-                    row.label(text="-")
+                    row.label(text)
+                    row.label("-")
 
             if ikBones:
                 row = layout.row()
-                row.label(text="IK bone")
-                row.label(text="FK bone")
+                row.label("IK bone")
+                row.label("FK bone")
                 box = layout.box()
                 for (ikBone, fkBone) in ikBones:
                     row = box.row()
-                    row.label(text=ikBone)
-                    row.label(text=fkBone)
-
-            if bendTwist:
-                row = layout.row()
-                row.label(text="Bend bone")
-                row.label(text="Twist bone")
-                box = layout.box()
-                for (bendBone, twistBone) in bendTwist:
-                    row = box.row()
-                    row.label(text=bendBone)
-                    row.label(text=twistBone)
-
+                    row.label(ikBone)
+                    row.label(fkBone)
+        return
 
 ########################################################################
 #
-#   class MCP_PT_Utility(bpy.types.Panel):
+#   class UtilityPanel(bpy.types.Panel):
 #
 
-class MCP_PT_Utility(bpy.types.Panel):
+class UtilityPanel(bpy.types.Panel):
     bl_category = "MakeWalk"
-    bl_label = "Utilities"
+    bl_label = "MakeWalk: Utilities"
     bl_space_type = "VIEW_3D"
-    bl_region_type = Region
+    bl_region_type = "TOOLS"
     bl_options = {'DEFAULT_CLOSED'}
 
     @classmethod
@@ -501,8 +486,6 @@ class MCP_PT_Utility(bpy.types.Panel):
         layout.prop(scn, "McpShowPosing")
         if scn.McpShowPosing:
             ins = inset(layout)
-            if not rig.McpTPoseDefined:
-                ins.prop(scn, "McpMakeHumanTPose")
             ins.operator("mcp.set_t_pose")
             ins.separator()
             ins.operator("mcp.define_t_pose")
@@ -520,64 +503,24 @@ class MCP_PT_Utility(bpy.types.Panel):
         layout.operator("mcp.copy_angles_fk_ik")
 
         layout.separator()
-        layout.label(text="Batch conversion")
+        layout.label("Batch conversion")
         layout.prop(scn, "McpDirectory")
         layout.prop(scn, "McpPrefix")
         layout.operator("mcp.batch")
 
-#----------------------------------------------------------
-#   Initialize
-#----------------------------------------------------------
+#
+#    init
+#
 
-classes = [
-    MCP_PT_Main,
-    MCP_PT_Options,
-    MCP_PT_Edit,
-    MCP_PT_MhxSourceBones,
-    MCP_PT_MhxTargetBones,
-    MCP_PT_Utility,
-
-    utils.ErrorOperator
-]
+props.initInterface(bpy.context)
 
 def register():
-    action.initialize()
-    edit.initialize()
-    fkik.initialize()
-    floor.initialize()
-    load.initialize()
-    loop.initialize()
-    props.initialize()
-    retarget.initialize()
-    simplify.initialize()
-    source.initialize()
-    t_pose.initialize()
-    target.initialize()
-
-    for cls in classes:
-        bpy.utils.register_class(cls)
-
+    bpy.utils.register_module(__name__)
 
 def unregister():
-    action.uninitialize()
-    edit.uninitialize()
-    fkik.uninitialize()
-    floor.uninitialize()
-    load.uninitialize()
-    loop.uninitialize()
-    props.uninitialize()
-    retarget.uninitialize()
-    simplify.uninitialize()
-    source.uninitialize()
-    t_pose.uninitialize()
-    target.uninitialize()
-
-    for cls in classes:
-        bpy.utils.unregister_class(cls)
-
+    bpy.utils.unregister_module(__name__)
 
 if __name__ == "__main__":
     register()
 
-print("MakeWalk loaded")
 

@@ -3,9 +3,6 @@
 
 # ##### BEGIN GPL LICENSE BLOCK #####
 #
-#  Authors:             Thomas Larsson
-#  Script copyright (C) Thomas Larsson 2014
-#
 #  This program is free software; you can redistribute it and/or
 #  modify it under the terms of the GNU General Public License
 #  as published by the Free Software Foundation; either version 2
@@ -21,6 +18,13 @@
 #  Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301, USA.
 #
 # ##### END GPL LICENSE BLOCK #####
+
+# Project Name:        MakeHuman
+# Product Home Page:   http://www.makehuman.org/
+# Code Home Page:      https://bitbucket.org/MakeHuman/makehuman/
+# Authors:             Thomas Larsson
+# Script copyright (C) MakeHuman Team 2001-2015
+# Coding Standards:    See http://www.makehuman.org/node/165
 
 #
 #   M_b = global bone matrix, relative world (PoseBone.matrix)
@@ -44,23 +48,20 @@ import mathutils
 import time
 from collections import OrderedDict
 from mathutils import *
+from bpy_extras.io_utils import ImportHelper
 from bpy.props import *
 
 from .simplify import simplifyFCurves, rescaleFCurves
 from .utils import *
 from . import t_pose
-if bpy.app.version < (2,80,0):
-    from .buttons27 import ProblemsString, LoadBVH
-else:
-    from .buttons28 import ProblemsString, LoadBVH
 
 
 class CAnimation:
 
-    def __init__(self, srcRig, trgRig, boneAssoc, context):
+    def __init__(self, srcRig, trgRig, boneAssoc, scn):
         self.srcRig = srcRig
         self.trgRig = trgRig
-        self.scene = context.scene
+        self.scene = scn
         self.boneAnims = OrderedDict()
 
         for (trgName, srcName) in boneAssoc:
@@ -70,7 +71,7 @@ class CAnimation:
             except KeyError:
                 print("  -", trgName, srcName)
                 continue
-            banim = self.boneAnims[trgName] = CBoneAnim(srcBone, trgBone, self, context)
+            banim = self.boneAnims[trgName] = CBoneAnim(srcBone, trgBone, self, scn)
 
 
     def printResult(self, scn, frame):
@@ -80,21 +81,20 @@ class CAnimation:
             banim.printResult(frame)
 
 
-    def setTPose(self, context):
-        putInRestPose(self.srcRig, True)
-        t_pose.setTPose(self.srcRig, context)
-        putInRestPose(self.trgRig, True)
-        t_pose.setTPose(self.trgRig, context)
+    def setTPose(self, scn):
+        selectAndSetRestPose(self.srcRig, scn)
+        t_pose.setTPose(self.srcRig, scn)
+        selectAndSetRestPose(self.trgRig, scn)
+        t_pose.setTPose(self.trgRig, scn)
         for banim in self.boneAnims.values():
             banim.insertTPoseFrame()
-        context.scene.frame_set(0)
+        scn.frame_set(0)
         for banim in self.boneAnims.values():
             banim.getTPoseMatrix()
 
 
-    def retarget(self, frames, context):
-        objects = hideObjects(context, self.srcRig)
-        scn = context.scene
+    def retarget(self, frames, scn):
+        objects = hideObjects(scn, self.srcRig)
         try:
             for frame in frames:
                 scn.frame_set(frame)
@@ -106,7 +106,7 @@ class CAnimation:
 
 class CBoneAnim:
 
-    def __init__(self, srcBone, trgBone, anim, context):
+    def __init__(self, srcBone, trgBone, anim, scn):
         self.name = srcBone.name
         self.srcMatrices = {}
         self.trgMatrices = {}
@@ -114,13 +114,13 @@ class CBoneAnim:
         self.trgMatrix = None
         self.srcBone = srcBone
         self.trgBone = trgBone
-        self.order,self.locks = getLocks(trgBone, context)
+        self.order,self.locks = getLocks(trgBone, scn)
         self.aMatrix = None
         self.parent = self.getParent(trgBone, anim)
         if self.parent:
             self.trgBone.McpParent = self.parent.trgBone.name
             trgParent = self.parent.trgBone
-            self.bMatrix = Mult2(trgBone.bone.matrix_local.inverted(), trgParent.bone.matrix_local)
+            self.bMatrix = trgBone.bone.matrix_local.inverted() * trgParent.bone.matrix_local
         else:
             self.bMatrix = trgBone.bone.matrix_local.inverted()
         self.useLimits = anim.scene.McpUseLimits
@@ -145,7 +145,7 @@ class CBoneAnim:
             "Retarget %s => %s\n" % (self.srcBone.name, self.trgBone.name) +
             "S %s\n" % self.srcBone.matrix +
             "T %s\n" % self.trgBone.matrix +
-            "R %s\n" % Mult2(self.trgBone.matrix, self.srcBone.matrix.inverted())
+            "R %s\n" % (self.trgBone.matrix * self.srcBone.matrix.inverted())
             )
 
 
@@ -161,7 +161,6 @@ class CBoneAnim:
             subtar = None
             for cns in pb.constraints:
                 if (cns.type[0:4] == "COPY" and
-                    cns.type != "COPY_SCALE" and
                     cns.influence > 0.8):
                     subtar = cns.subtarget
 
@@ -186,31 +185,31 @@ class CBoneAnim:
 
 
     def getTPoseMatrix(self):
-        self.aMatrix = Mult2(self.srcBone.matrix.inverted(), self.trgBone.matrix)
+        self.aMatrix =  self.srcBone.matrix.inverted() * self.trgBone.matrix
         if not isRotationMatrix(self.trgBone.matrix):
-            raise RuntimeError("Target %s not rotation matrix %s" % (self.trgBone.name, self.trgBone.matrix))
+            print("* WARNING *\nTarget %s not rotation matrix:\n%s" % (self.trgBone.name, self.trgBone.matrix))
         if not isRotationMatrix(self.srcBone.matrix):
-            raise RuntimeError("Source %s not rotation matrix %s" % (self.srcBone.name, self.srcBone.matrix))
+            print("* WARNING *\nSource %s not rotation matrix:\n%s" % (self.srcBone.name, self.srcBone.matrix))
         if not isRotationMatrix(self.aMatrix):
-            raise RuntimeError("A %s not rotation matrix %s" % (self.trgBone.name, self.aMatrix.matrix))
+            print("* WARNING *\nA %s not rotation matrix:\n%s" % (self.trgBone.name, self.aMatrix))
 
 
     def retarget(self, frame):
         self.srcMatrix = self.srcBone.matrix.copy()
-        self.trgMatrix = Mult2(self.srcMatrix, self.aMatrix)
+        self.trgMatrix = self.srcMatrix * self.aMatrix
         self.trgMatrix.col[3] = self.srcMatrix.col[3]
         if self.parent:
-            mat1 = Mult2(self.parent.trgMatrix.inverted(), self.trgMatrix)
+            mat1 = self.parent.trgMatrix.inverted() * self.trgMatrix
         else:
             mat1 = self.trgMatrix
-        mat2 = Mult2(self.bMatrix, mat1)
+        mat2 = self.bMatrix * mat1
         mat3 = correctMatrixForLocks(mat2, self.order, self.locks, self.trgBone, self.useLimits)
         self.insertKeyFrame(mat3, frame)
 
         self.srcMatrices[frame] = self.srcMatrix
-        mat1 = Mult2(self.bMatrix.inverted(), mat3)
+        mat1 = self.bMatrix.inverted() * mat3
         if self.parent:
-            self.trgMatrix = Mult2(self.parent.trgMatrix, mat1)
+            self.trgMatrix = self.parent.trgMatrix * mat1
         else:
             self.trgMatrix = mat1
         self.trgMatrices[frame] = self.trgMatrix
@@ -229,8 +228,7 @@ class CBoneAnim:
             print("MB2", self.trgBone.matrix)
 
 
-def getLocks(pb, context):
-    scn = context.scene
+def getLocks(pb, scn):
     locks = []
     order = 'XYZ'
     if scn.McpClearLocks:
@@ -294,11 +292,9 @@ def correctMatrixForLocks(mat, order, locks, pb, useLimits):
     return mat
 
 
-def hideObjects(context, rig):
-    if bpy.app.version >= (2,80,0):
-        return None
+def hideObjects(scn, rig):
     objects = []
-    for ob in getSceneObjects(context):
+    for ob in scn.objects:
         if ob != rig:
             objects.append((ob, list(ob.layers)))
             ob.layers = 20*[False]
@@ -306,10 +302,9 @@ def hideObjects(context, rig):
 
 
 def unhideObjects(objects):
-    if bpy.app.version >= (2,80,0):
-        return
     for (ob,layers) in objects:
         ob.layers = layers
+    return
 
 
 def clearMcpProps(rig):
@@ -327,21 +322,20 @@ def clearMcpProps(rig):
 
 def retargetAnimation(context, srcRig, trgRig):
     from . import source, target
-    from .fkik import setMhxIk, setRigifyFKIK, setRigify2FKIK
+    from .fkik import setMhxIk, setRigifyFKIK
 
     startProgress("Retargeting")
     scn = context.scene
     setMhxIk(trgRig, True, True, 0.0)
     frames = getActiveFrames(srcRig)
     nFrames = len(frames)
-    setActiveObject(context, trgRig)
+    reallySelect(trgRig, scn)
     if trgRig.animation_data:
         trgRig.animation_data.action = None
+    scn.update()
 
     if isRigify(trgRig):
         setRigifyFKIK(trgRig, 0.0)
-    elif isRigify2(trgRig):
-        setRigify2FKIK(trgRig, 1.0)
 
     try:
         scn.frame_current = frames[0]
@@ -354,9 +348,10 @@ def retargetAnimation(context, srcRig, trgRig):
     print("Retarget %s --> %s" % (srcRig.name, trgRig.name))
 
     target.ensureTargetInited(scn)
-    boneAssoc = target.getTargetArmature(trgRig, context)
-    anim = CAnimation(srcRig, trgRig, boneAssoc, context)
-    anim.setTPose(context)
+    boneAssoc = target.getTargetArmature(trgRig, scn)
+    disconnectHips(trgRig, boneAssoc)
+    anim = CAnimation(srcRig, trgRig, boneAssoc, scn)
+    anim.setTPose(scn)
 
     setCategory("Retarget")
     frameBlock = frames[0:100]
@@ -364,7 +359,7 @@ def retargetAnimation(context, srcRig, trgRig):
     try:
         while frameBlock:
             showProgress(index, frames[index], nFrames)
-            anim.retarget(frameBlock, context)
+            anim.retarget(frameBlock, scn)
             index += 100
             frameBlock = frames[index:index+100]
 
@@ -381,6 +376,14 @@ def retargetAnimation(context, srcRig, trgRig):
     clearCategory()
     endProgress("Retargeted %s --> %s" % (srcRig.name, trgRig.name))
 
+
+def disconnectHips(rig, boneAssoc):
+    for bname,mname in boneAssoc:
+        if mname == "hips":
+            bpy.ops.object.mode_set(mode='EDIT')
+            rig.data.edit_bones[bname].use_connect = False
+            bpy.ops.object.mode_set(mode='POSE')
+            return
 
 #
 #   changeTargetData(rig, scn):
@@ -502,11 +505,13 @@ def loadRetargetSimplify(context, filepath):
 #   Buttons
 #
 
-class MCP_OT_RetargetMhx(bpy.types.Operator, ProblemsString):
+class VIEW3D_OT_NewRetargetMhxButton(bpy.types.Operator):
     bl_idname = "mcp.retarget_mhx"
     bl_label = "Retarget Selected To Active"
     bl_description = "Retarget animation to the active (target) armature from the other selected (source) armature"
     bl_options = {'UNDO'}
+
+    problems = ""
 
     def execute(self, context):
         from . import target
@@ -520,7 +525,7 @@ class MCP_OT_RetargetMhx(bpy.types.Operator, ProblemsString):
         rigList = list(context.selected_objects)
 
         try:
-            target.getTargetArmature(trgRig, context)
+            target.getTargetArmature(trgRig, scn)
             for srcRig in rigList:
                 if srcRig != trgRig:
                     retargetAnimation(context, srcRig, trgRig)
@@ -537,11 +542,16 @@ class MCP_OT_RetargetMhx(bpy.types.Operator, ProblemsString):
         drawObjectProblems(self)
 
 
-class MCP_OT_LoadAndRetarget(bpy.types.Operator, ProblemsString, LoadBVH):
+class VIEW3D_OT_LoadAndRetargetButton(bpy.types.Operator, ImportHelper):
     bl_idname = "mcp.load_and_retarget"
     bl_label = "Load And Retarget"
     bl_description = "Load animation from bvh file to the active armature"
     bl_options = {'UNDO'}
+
+    problems = ""
+    filename_ext = ".bvh"
+    filter_glob = StringProperty(default="*.bvh", options={'HIDDEN'})
+    filepath = StringProperty(name="File Path", description="Filepath used for importing the BVH file", maxlen=1024, default="")
 
     @classmethod
     def poll(self, context):
@@ -564,7 +574,7 @@ class MCP_OT_LoadAndRetarget(bpy.types.Operator, ProblemsString, LoadBVH):
         drawObjectProblems(self)
 
 
-class MCP_OT_ClearTempProps(bpy.types.Operator):
+class VIEW3D_OT_ClearTempPropsButton(bpy.types.Operator):
     bl_idname = "mcp.clear_temp_props"
     bl_label = "Clear Temporary Properties"
     bl_description = "Clear properties used by MakeWalk. Animation editing may fail after this."
@@ -576,22 +586,3 @@ class MCP_OT_ClearTempProps(bpy.types.Operator):
         except MocapError:
             bpy.ops.mcp.error('INVOKE_DEFAULT')
         return{'FINISHED'}
-
-#----------------------------------------------------------
-#   Initialize
-#----------------------------------------------------------
-
-classes = [
-    MCP_OT_RetargetMhx,
-    MCP_OT_LoadAndRetarget,
-    MCP_OT_ClearTempProps,
-]
-
-def initialize():
-    for cls in classes:
-        bpy.utils.register_class(cls)
-
-
-def uninitialize():
-    for cls in classes:
-        bpy.utils.unregister_class(cls)

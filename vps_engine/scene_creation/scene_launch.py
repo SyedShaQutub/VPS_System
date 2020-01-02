@@ -51,9 +51,9 @@ def main():
      filetype = "FBX"
      city = CityModels(name='Square_City',path=citymodel_path,filetype=filetype)
 
-     mhchar_path = os.path.join(scene_path + '/graphics/3D_characters/makehuman_characters/characters/male_basic/male_basic.mhx2')
+     mhchar_path = os.path.join(scene_path + '/graphics/3D_characters/makehuman_characters/characters/female_basic/female_basic.mhx2')
      mocap_data_basicwalk = os.path.join(scene_path + '/graphics/3D_characters/Motion Capture data/Female1_bvh/Female1_B03_Walk1.bvh')
-     male_char_00 = MakeHuman('male_basic00',  )
+     male_char_00 = MakeHuman('male_basic00', mhchar_path)
      male_char_00.attach_mocap(mocap_data_basicwalk)
 
      test_edited_bvh(mhchar_path)

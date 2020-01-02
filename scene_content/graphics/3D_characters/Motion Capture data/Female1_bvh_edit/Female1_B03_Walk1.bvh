@@ -4,7 +4,7 @@ ROOT Hips
   OFFSET 0.0 0.0 0.0
   CHANNELS 6 Xposition Yposition Zposition Zrotation Xrotation Yrotation
   JOINT ToSpine
-  {F
+  {
     OFFSET -0.0105055 1.38907 -7.13956
     CHANNELS 3 Zrotation Yrotation Xrotation
     JOINT Spine

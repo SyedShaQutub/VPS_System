@@ -45,7 +45,7 @@ def test_edited_bvh(character_path):
 
 def main():
 
-     bld_clearscreenspace()
+     blender_utils.bld_clearscreenspace()
      DEBUG = False
      if DEBUG == True:
           print('In DEBUGGER MODE')
@@ -70,11 +70,17 @@ def main():
      mocap_data_basicwalk = os.path.join(scene_path + '/graphics/3D_characters/Motion Capture data/cmuconvert-mb2-01-09/02/02_02.bvh')
      male_char_00 = MakeHuman('male_basic00', mhchar_path )
      male_char_00.attach_mocap(mocap_data_basicwalk)
+
+     sky_spotlights = ['Sky001']
+     camera = ['Camera001']
+     blender_utils.relocate_object(object = sky_spotlights[0], loc = (0,0,20))
+     blender_utils.attributeDataChange(sky_spotlights[0], attribute = 'energy', value = 20)
+     blender_utils.relocate_object(object = camera[0], loc = (2,15.5,3))
+
      #male_char_00.walk_anim(speed=speed, init_position=init_position)
-
      #test_edited_bvh(mhchar_path)
-
      #play_animation()
+
 
 if __name__ == "__main__":
      main()

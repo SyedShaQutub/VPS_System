@@ -20,6 +20,8 @@ filepath = bpy.context.space_data.text.filepath
 print(filepath)
 launch_path = os.path.dirname(filepath)
 launch_path = launch_path.replace('\\','/')
+renderedImages = os.path.join(launch_path + '/renderedImages')
+os.mkdir(renderedImages)
 def render(scene, camera_object, mesh_objects, camera_steps, file_prefix="render"):
     """
     Renders the scene at different camera angles to a file, and returns a list of label data
@@ -33,7 +35,7 @@ def render(scene, camera_object, mesh_objects, camera_steps, file_prefix="render
             # Rendering
             # https://blender.stackexchange.com/questions/1101/blender-rendering-automation-build-script
             filename = '{}-{}y-{}p.png'.format(str(file_prefix), str(i), str(j))
-            bpy.context.scene.render.filepath = os.path.join('/Users/thelabratory/documents/', filename)
+            bpy.context.scene.render.filepath = os.path.join(renderedImages, filename)
             bpy.ops.render.render(write_still=True)
 
             scene = bpy.data.scenes['Scene']
@@ -43,7 +45,7 @@ def render(scene, camera_object, mesh_objects, camera_steps, file_prefix="render
             }
             sep = '.png'
             textfilename = filename.split(sep, 1)[0]
-            file = open('/Users/thelabratory/documents/' + textfilename + '.txt','w+')
+            file = open(renderedImages + textfilename + '.txt','w+')
             """ Get the bounding box coordinates for each mesh """
             for object in mesh_objects:
                 bounding_box = boundingbox.camera_view_bounds_2d(scene, camera_object, object)
@@ -79,7 +81,7 @@ def batch_render(scene, camera_object, mesh_objects):
     labels = []
 
     for i in range(0, scene_setup_steps):
-        frame_num = 46 + i
+        frame_num = 2 + i
         scene_setup.simulate(scene, mesh_objects, frame_num)
         scene_labels = render(scene, camera_object, mesh_objects, camera_steps, file_prefix=i)
         labels += scene_labels # Merge lists
@@ -91,6 +93,6 @@ def batch_render(scene, camera_object, mesh_objects):
 if __name__ == '__main__':
     scene = bpy.data.scenes['Scene']
     camera_object = bpy.data.objects['Camera001']
-    mesh_names = ['Sphere.003', 'Cylinder']
+    mesh_names = ['001']
     mesh_objects = [bpy.data.objects[name] for name in mesh_names]
     batch_render(scene, camera_object, mesh_objects)

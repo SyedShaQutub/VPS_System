@@ -76,5 +76,5 @@ def camera_view_bounds_2d(scene, camera_object, mesh_object):
 if __name__ == '__main__':
     scene = bpy.data.scenes['Scene']
     camera_object = bpy.data.objects['Camera']
-    mesh_object = bpy.data.objects['Sphere.001', 'Cylinder']
+    mesh_object = bpy.data.objects['001']
     camera_view_bounds_2d(scene, camera_object, mesh_object)

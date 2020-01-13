@@ -4,11 +4,17 @@ import numpy as np
 import json
 import sys
 
+# filepath = bpy.context.space_data.text.filepath
+# print(filepath)
+# launch_path = os.path.dirname(filepath)
+# launch_path = launch_path.replace('\\','/')
+# sys.path.append(launch_path)
+
 """
 Add scripts folder to Blender's Python interpreter and reload all scripts.
 http://web.purplefrog.com/~thoth/blender/python-cookbook/import-python.html
 """
-dir = os.path.dirname(bpy.data.filepath)
+dir = os.path.dirname(bpy.context.space_data.text.filepath)
 if not dir in sys.path:
     sys.path.append(dir)
 
@@ -20,7 +26,8 @@ filepath = bpy.context.space_data.text.filepath
 print(filepath)
 launch_path = os.path.dirname(filepath)
 launch_path = launch_path.replace('\\','/')
-renderedImages = os.path.join(launch_path + '/renderedImages')
+renderedImages = os.path.join(launch_path + '/rendered_Images')
+#if os.path.exists(renderedImages) is False:
 os.mkdir(renderedImages)
 def render(scene, camera_object, mesh_objects, camera_steps, file_prefix="render"):
     """
@@ -86,7 +93,7 @@ def batch_render(scene, camera_object, mesh_objects):
         scene_labels = render(scene, camera_object, mesh_objects, camera_steps, file_prefix=i)
         labels += scene_labels # Merge lists
 
-    with open('/Users/thelabratory/documents/labels.json', 'w+') as f:
+    with open(renderedImages + 'labels.json', 'w+') as f:
         json.dump(labels, f, sort_keys=True, indent=4, separators=(',', ': '))
 
 

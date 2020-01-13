@@ -81,11 +81,8 @@ def main():
      #TODO : Define this function
      #cameras = define_CAMS(units = 1)
      cameras = ['Camera001']
-     takesnapshots(cameras, launch_path)
+     generateDataset(cameras, launch_path)
 
-     #male_char_00.walk_anim(speed=speed, init_position=init_position)
-     #test_edited_bvh(mhchar_path)
-     #play_animation()
 
 
 if __name__ == "__main__":

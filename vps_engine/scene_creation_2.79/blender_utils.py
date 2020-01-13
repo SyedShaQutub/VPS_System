@@ -69,7 +69,7 @@ def attributeDataChange(object, attribute=None, value=None):
         Warning("Failed in setting the attribute")
     return None
 
-def takesnapshots(camlist=None, path=None, loc=None):
+def generateDataset(camlist=None, path=None, loc=None):
     
     if camlist is None:
         Warning("Cameras are not initalised")
@@ -111,7 +111,7 @@ def takesnapshots(camlist=None, path=None, loc=None):
             bpy.data.scenes[sceneKey].render.filepath = rendered_folders[0]+'/'+ 'frame_{:04d}'.format(f)
             bpy.ops.render.render(write_still=True)
         scene.render.filepath = tmp_filename
-
+        gen_labels_test(path = rendered_folders[1])
 
         print("Finished")
     return None

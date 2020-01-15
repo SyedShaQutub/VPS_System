@@ -1,7 +1,11 @@
 import bpy
 import mathutils
 import os, datetime
-
+import importlib
+import gen_labels
+importlib.reload(gen_labels)
+from gen_labels import gen_labels_test
+from gen_labels import gen_CompositorNodes
 
 def bld_clearscreenspace():
     print("Clearing the objects in the scene")
@@ -94,24 +98,25 @@ def generateDataset(camlist=None, path=None, loc=None):
             rendered_folders.append(newfolder)
 
         sceneKey = bpy.data.scenes.keys()[0]
-        
-        #bpy.data.scenes[sceneKey].render.filepath = rendered_folders[0]+'/'+folders[0]
+
         currCam = bpy.data.objects[camlist[0]]
         bpy.data.scenes[sceneKey].camera = currCam
-        # bpy.ops.render.render( write_still=True )
         
         scene = bpy.context.scene
         tmp_filename = scene.render.filepath
         all_frames = range(scene.frame_start, scene.frame_end + 1)
-
+        gen_CompositorNodes()
         for f in [f for f in all_frames if f%50 == 0]:# or f%10 == 5]:
             scene.frame_set(f)
             #scene.render.filepath = '//frame_{:04d}'.format(f)  # frame_0000 etc.
-            
+            bpy.context.scene.use_nodes = False
             bpy.data.scenes[sceneKey].render.filepath = rendered_folders[0]+'/'+ 'frame_{:04d}'.format(f)
             bpy.ops.render.render(write_still=True)
+            bpy.context.scene.use_nodes = True
+            bpy.data.scenes[sceneKey].render.filepath = rendered_folders[1]+'/'+ 'frame_{:04d}'.format(f)
+            bpy.ops.render.render(layer='RenderLayers', write_still=True)
         scene.render.filepath = tmp_filename
-        gen_labels_test(path = rendered_folders[1])
+        #gen_labels_test(labels_path = rendered_folders[1])
 
         print("Finished")
     return None

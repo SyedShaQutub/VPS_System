@@ -10,8 +10,13 @@ class objectbasedAlpha():
         color.extend([1])
         self.id = idx
         self.color = color
-        print('label name: ')
-        
+        ##DEBUG
+        print("label name: {}".format(self.label_name))
+        print("label name: {}".format(self.label_name))
+        print("label pass idx: {}:".format(self.pass_idx))
+        print("label original color: {}".format(labelList[2]))
+        print("label color: {}".format(self.color))
+    
 
 
         self.idMask = tree.nodes.new('CompositorNodeIDMask') # add ID mask node

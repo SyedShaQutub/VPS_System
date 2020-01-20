@@ -6,6 +6,7 @@ import blender_utils
 importlib.reload(blender_utils)
 from blender_utils import *
 
+
 class CityModels:
     def __init__(self, name, path, filetype):
         self.asset_name = name
@@ -50,5 +51,27 @@ class MakeHuman:
     def walk_anim(self,speed,rotation,init_position):
         pass
         
+def assetImport():
+    filepath = bpy.context.space_data.text.filepath
+    launch_path = os.path.dirname(filepath)
+    launch_path = launch_path.replace('\\','/')
+
+    scenecontent_path = os.path.join(launch_path.rsplit("/",2)[0] + '/scene_content')
+    citymodel_path= os.path.join(scenecontent_path + '/graphics/city_models/9btvoxf8n0cg-3dt/Street environment_V01.FBX') #"C:/Users/Qutub/Documents/VPS_System/scene_content/graphics/city_models/9btvoxf8n0cg-3dt/Street environment_V01.FBX"
+    filetype = "FBX"
+    city = CityModels(name='Square_City',path=citymodel_path,filetype=filetype)
+
+    mhchar_path = os.path.join(scenecontent_path + '/graphics/3D_characters/makehuman_characters/characters/female_basic/female_basic.mhx2')
+    #mocap_data_basicwalk = os.path.join(scenecontent_path + '/graphics/3D_characters/Motion Capture data/Female1_bvh/Female1_B03_Walk1.bvh')
+    mocap_data_basicwalk = os.path.join(scenecontent_path + '/graphics/3D_characters/Motion Capture data/cmuconvert-mb2-01-09/02/02_02.bvh')
+    male_char_00 = MakeHuman('male_basic00', mhchar_path )
+    male_char_00.attach_mocap(mocap_data_basicwalk)
+
+    sky_spotlights = ['Sky001']
+    camera = ['Camera001']
+    blender_utils.relocate_object(object = sky_spotlights[0], loc = (0,0,20))
+    blender_utils.attributeDataChange(sky_spotlights[0], attribute = 'energy', value = 20)
+    blender_utils.relocate_object(object = camera[0], loc = (9.7, 5, 1.6))
+    blender_utils.rotate_object(object = camera[0], eulerAngle = (1.5707963705062866, 0.016647271811962128, 2.2514748573303223))
 
 

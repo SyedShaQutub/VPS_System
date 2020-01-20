@@ -23,19 +23,20 @@ sys.path.append(labels_path)
 def edit_ShaderEditorNodes():
     # adapts FBX model for cycle renderer
     mat = [mat.name for mat in bpy.data.materials]
+    character = 'male'
     for _mat in mat:
-
-        #delete the node Image Texture.001
-        purge_nodeName = 'Image Texture.001'
-        principled_bsdf = 'Principled BSDF'
-        nodes = bpy.data.materials[_mat].node_tree.nodes
-        links = bpy.data.materials[_mat].node_tree.links
-        node_names = [node.name for node in nodes]
-        if purge_nodeName in node_names and principled_bsdf in node_names:
-            print(_mat)
-            purge_node = nodes[purge_nodeName]
-            nodes.remove(purge_node)
-            links.new(nodes['Image Texture'].outputs['Alpha'], nodes['Principled BSDF'].inputs['Alpha'])
+        if character not in _mat:
+            #delete the node Image Texture.001
+            purge_nodeName = 'Image Texture.001'
+            principled_bsdf = 'Principled BSDF'
+            nodes = bpy.data.materials[_mat].node_tree.nodes
+            links = bpy.data.materials[_mat].node_tree.links
+            node_names = [node.name for node in nodes]
+            if purge_nodeName in node_names and principled_bsdf in node_names:
+                print(_mat)
+                purge_node = nodes[purge_nodeName]
+                nodes.remove(purge_node)
+                links.new(nodes['Image Texture'].outputs['Alpha'], nodes['Principled BSDF'].inputs['Alpha'])
             
 def gen_CompositorNodes():
     obj_names = [obj.name for obj in bpy.data.objects]

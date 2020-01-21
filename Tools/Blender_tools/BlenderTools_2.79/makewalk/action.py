@@ -3,9 +3,6 @@
 
 # ##### BEGIN GPL LICENSE BLOCK #####
 #
-#  Authors:             Thomas Larsson
-#  Script copyright (C) Thomas Larsson 2014
-#
 #  This program is free software; you can redistribute it and/or
 #  modify it under the terms of the GNU General Public License
 #  as published by the Free Software Foundation; eimcp.r version 2
@@ -22,15 +19,18 @@
 #
 # ##### END GPL LICENSE BLOCK #####
 
+# Project Name:        MakeHuman
+# Product Home Page:   http://www.makehuman.org/
+# Code Home Page:      https://bitbucket.org/MakeHuman/makehuman/
+# Authors:             Thomas Larsson
+# Script copyright (C) MakeHuman Team 2001-2015
+# Coding Standards:    See http://www.makehuman.org/node/165
+
 import bpy
 from bpy.props import EnumProperty, StringProperty
 
 from . import utils
 from .utils import *
-if bpy.app.version < (2,80,0):
-    from .buttons27 import PropString
-else:
-    from .buttons28 import PropString
 
 #
 #   Global variables
@@ -44,7 +44,7 @@ _actions = []
 #
 #   listAllActions(context):
 #   findActionNumber(name):
-#   class MCP_OT_UpdateActionList(bpy.types.Operator):
+#   class VIEW3D_OT_McpUpdateActionListButton(bpy.types.Operator):
 #
 
 def listAllActions(context):
@@ -88,7 +88,7 @@ def findActionNumber(name):
     raise MocapError("Unrecognized action %s" % name)
 
 
-class MCP_OT_UpdateActionList(bpy.types.Operator):
+class VIEW3D_OT_McpUpdateActionListButton(bpy.types.Operator):
     bl_idname = "mcp.update_action_list"
     bl_label = "Update Action List"
     bl_description = "Update the action list"
@@ -104,7 +104,7 @@ class MCP_OT_UpdateActionList(bpy.types.Operator):
 
 #
 #   deleteAction(context):
-#   class MCP_OT_Delete(bpy.types.Operator):
+#   class VIEW3D_OT_McpDeleteButton(bpy.types.Operator):
 #
 
 def deleteAction(context):
@@ -131,7 +131,7 @@ def deleteAction(context):
         raise MocapError("Cannot delete. Action %s has %d users." % (act.name, act.users))
 
 
-class MCP_OT_Delete(bpy.types.Operator):
+class VIEW3D_OT_McpDeleteButton(bpy.types.Operator):
     bl_idname = "mcp.delete"
     bl_label = "Delete Action"
     bl_description = "Delete the action selected in the action list"
@@ -149,11 +149,11 @@ class MCP_OT_Delete(bpy.types.Operator):
         return wm.invoke_props_dialog(self, width=200, height=20)
 
     def draw(self, context):
-        self.layout.label(text="Really delete action?")
+        self.layout.label("Really delete action?")
 
 #
 #   deleteHash():
-#   class MCP_OT_DeleteHash(bpy.types.Operator):
+#   class VIEW3D_OT_McpDeleteHashButton(bpy.types.Operator):
 #
 
 def deleteHash():
@@ -163,7 +163,7 @@ def deleteHash():
     return
 
 
-class MCP_OT_DeleteHash(bpy.types.Operator):
+class VIEW3D_OT_McpDeleteHashButton(bpy.types.Operator):
     bl_idname = "mcp.delete_hash"
     bl_label = "Delete Temporary Actions"
     bl_description = (
@@ -182,7 +182,7 @@ class MCP_OT_DeleteHash(bpy.types.Operator):
 
 #
 #   setCurrentAction(context, prop):
-#   class MCP_OT_SetCurrentAction(bpy.types.Operator):
+#   class VIEW3D_OT_McpSetCurrentActionButton(bpy.types.Operator):
 #
 
 def setCurrentAction(context, prop):
@@ -202,11 +202,12 @@ def getAction(name):
     raise MocapError("Did not find action %s" % name)
 
 
-class MCP_OT_SetCurrentAction(bpy.types.Operator, PropString):
+class VIEW3D_OT_McpSetCurrentActionButton(bpy.types.Operator):
     bl_idname = "mcp.set_current_action"
     bl_label = "Set Current Action"
     bl_description = "Set the action selected in the action list as the current action"
     bl_options = {'UNDO'}
+    prop = StringProperty()
 
     def execute(self, context):
         try:
@@ -215,22 +216,3 @@ class MCP_OT_SetCurrentAction(bpy.types.Operator, PropString):
             bpy.ops.mcp.error('INVOKE_DEFAULT')
         return{'FINISHED'}
 
-#----------------------------------------------------------
-#   Initialize
-#----------------------------------------------------------
-
-classes = [
-    MCP_OT_UpdateActionList,
-    MCP_OT_Delete,
-    MCP_OT_DeleteHash,
-    MCP_OT_SetCurrentAction,
-]
-
-def initialize():
-    for cls in classes:
-        bpy.utils.register_class(cls)
-
-
-def uninitialize():
-    for cls in classes:
-        bpy.utils.unregister_class(cls)

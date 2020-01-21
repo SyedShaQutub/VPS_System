@@ -3,9 +3,6 @@
 
 # ##### BEGIN GPL LICENSE BLOCK #####
 #
-#  Authors:             Thomas Larsson
-#  Script copyright (C) Thomas Larsson 2014
-#
 #  This program is free software; you can redistribute it and/or
 #  modify it under the terms of the GNU General Public License
 #  as published by the Free Software Foundation; eimcp.r version 2
@@ -22,12 +19,22 @@
 #
 # ##### END GPL LICENSE BLOCK #####
 
+# Project Name:        MakeHuman
+# Product Home Page:   http://www.makehuman.org/
+# Code Home Page:      https://bitbucket.org/MakeHuman/makehuman/
+# Authors:             Thomas Larsson
+# Script copyright (C) MakeHuman Team 2001-2015
+# Coding Standards:    See http://www.makehuman.org/node/165
+
+
+
 import bpy
 import os
 from collections import OrderedDict
 from math import pi
 from mathutils import *
 from bpy.props import *
+from bpy_extras.io_utils import ImportHelper
 
 from .utils import *
 
@@ -122,7 +129,12 @@ class CArmature:
             _,terminal = self.chainEnd(pb)
             _,tail,_ = getHeadTailDir(terminal)
             limbs.append((tail[0], pb))
-        limbs.sort()
+        try:
+            limbs.sort()
+        except TypeError:
+            string = "Children of hips incorrectly located. X-coordinates:\n"
+            string += "".join(["  %s: %f\n" % (pb.name, x) for (x,pb) in limbs])
+            raise MocapError(string)
         _,rightLeg = limbs[0]
         _,spine = limbs[1]
         _,leftLeg = limbs[2]
@@ -326,7 +338,7 @@ def validBone(pb, rig=None, muteIk=False):
                 hidden = False
                 break
         if hidden:
-            print("Hidden", pb.name)
+            #print("Hidden", pb.name)
             return False
 
     for cns in pb.constraints:
@@ -334,9 +346,6 @@ def validBone(pb, rig=None, muteIk=False):
             pass
         elif cns.type[0:5] == 'LIMIT':
             #cns.influence = 0
-            pass
-        elif (cns.type == 'COPY_ROTATION' and
-              cns.use_offset):
             pass
         elif cns.type == 'IK':
             if muteIk:

@@ -3,9 +3,6 @@
 
 # ##### BEGIN GPL LICENSE BLOCK #####
 #
-#  Authors:             Thomas Larsson
-#  Script copyright (C) Thomas Larsson 2014
-#
 #  This program is free software; you can redistribute it and/or
 #  modify it under the terms of the GNU General Public License
 #  as published by the Free Software Foundation; either version 2
@@ -22,19 +19,24 @@
 #
 # ##### END GPL LICENSE BLOCK #####
 
+# Project Name:        MakeHuman
+# Product Home Page:   http://www.makehuman.org/
+# Code Home Page:      https://bitbucket.org/MakeHuman/makehuman/
+# Authors:             Thomas Larsson
+# Script copyright (C) MakeHuman Team 2001-2015
+# Coding Standards:    See http://www.makehuman.org/node/165
+
+
+
 import bpy, os, mathutils, math, time
 from math import sin, cos
 from mathutils import *
+from bpy_extras.io_utils import ImportHelper
 from bpy.props import *
 
 from . import props
 from . import simplify
 from .utils import *
-
-if bpy.app.version < (2,80,0):
-    from .buttons27 import ProblemsString, LoadBVH
-else:
-    from .buttons28 import ProblemsString, LoadBVH
 
 ###################################################################################
 #    BVH importer.
@@ -125,11 +127,11 @@ def readBvhFile(context, filepath, scn, scan):
     endFrame = scn.McpEndFrame
     frameno = 1
     if scn.McpFlipYAxis:
-        flipMatrix = Mult2(Matrix.Rotation(math.pi, 3, 'X'), Matrix.Rotation(math.pi, 3, 'Y'))
+        flipMatrix = Matrix.Rotation(math.pi, 3, 'X') * Matrix.Rotation(math.pi, 3, 'Y')
     else:
         flipMatrix = Matrix.Rotation(0, 3, 'X')
     if True or scn.McpRot90Anim:
-        flipMatrix = Mult2(Matrix.Rotation(math.pi/2, 3, 'X'), flipMatrix)
+        flipMatrix = Matrix.Rotation(math.pi/2, 3, 'X') * flipMatrix
     if (scn.McpSubsample):
         ssFactor = scn.McpSSFactor
     else:
@@ -145,7 +147,7 @@ def readBvhFile(context, filepath, scn, scan):
     time1 = time.clock()
     level = 0
     nErrors = 0
-    coll = getCollection(context)
+    scn = context.scene
     rig = None
 
     fp = open(fileName, "rU")
@@ -167,9 +169,9 @@ def readBvhFile(context, filepath, scn, scan):
                 return root
             amt = bpy.data.armatures.new("BvhAmt")
             rig = bpy.data.objects.new("BvhRig", amt)
-            coll.objects.link(rig)
-            setActiveObject(context, rig)
-            context.scene.update()
+            scn.objects.link(rig)
+            reallySelect(rig, scn)
+            scn.update()
             bpy.ops.object.mode_set(mode='EDIT')
             bpy.ops.object.mode_set(mode='EDIT')
             root.build(amt, Vector((0,0,0)), None)
@@ -188,7 +190,7 @@ def readBvhFile(context, filepath, scn, scan):
                 ended = False
             elif key == 'OFFSET':
                 (x,y,z) = (float(words[1]), float(words[2]), float(words[3]))
-                node.offset = scale * Mult2(flipMatrix, Vector((x,y,z)))
+                node.offset = scale * flipMatrix * Vector((x,y,z))
             elif key == 'END':
                 node = CNode(words, node)
                 ended = True
@@ -206,7 +208,7 @@ def readBvhFile(context, filepath, scn, scan):
             elif key == '}':
                 if not ended:
                     node = CNode(["End", "Site"], node)
-                    node.offset = scale * Mult2(flipMatrix, Vector((0,1,0)))
+                    node.offset = scale * flipMatrix * Vector((0,1,0))
                     node = node.parent
                     ended = True
                 level -= 1
@@ -277,7 +279,7 @@ def addFrame(words, frame, nodes, pbones, scale, flipMatrix):
                         vec[index] = sign*float(words[m])
                         m += 1
                     if first:
-                        pb.location = Mult2(node.inverse, scale * Mult2(flipMatrix, vec) - node.head)
+                        pb.location = node.inverse * (scale * flipMatrix * vec - node.head)
                         pb.keyframe_insert('location', frame=frame, group=name)
                     first = False
                 elif mode == Rotation:
@@ -286,7 +288,7 @@ def addFrame(words, frame, nodes, pbones, scale, flipMatrix):
                         angle = sign*float(words[m])*Deg2Rad
                         mats.append(Matrix.Rotation(angle, 3, axis))
                         m += 1
-                    mat = Mult3(Mult2(node.inverse, flipMatrix),  Mult3(mats[0], mats[1], mats[2]), Mult2(flipInv, node.matrix))
+                    mat = node.inverse * flipMatrix *mats[0] * mats[1] * mats[2] * flipInv * node.matrix
                     setRotation(pb, mat, frame, name)
 
     return
@@ -360,16 +362,17 @@ class CEditBone():
         return ("%s p %s\n  h %s\n  t %s\n" % (self.name, self.parent, self.head, self.tail))
 
 #
-#    renameBones(srcRig, context):
+#    renameBones(srcRig, scn):
 #
 
-def renameBones(srcRig, context):
+def renameBones(srcRig, scn):
     from .source import getSourceBoneName
 
     srcBones = []
     trgBones = {}
 
-    setActiveObject(context, srcRig)
+    reallySelect(srcRig, scn)
+    scn.update()
     bpy.ops.object.mode_set(mode='EDIT')
     bpy.ops.object.mode_set(mode='EDIT')
     #print("Ren", bpy.context.object, srcRig.mode)
@@ -438,10 +441,13 @@ def renameBvhRig(srcRig, filepath):
 
 def deleteSourceRig(context, rig, prefix):
     ob = context.object
-    setActiveObject(context, rig)
+    scn = context.scene
+    reallySelect(rig, scn)
     bpy.ops.object.mode_set(mode='OBJECT')
-    setActiveObject(context, ob)
-    deleteObject(context, rig)
+    reallySelect(ob, scn)
+    scn.objects.unlink(rig)
+    if rig.users == 0:
+        bpy.data.objects.remove(rig)
     if bpy.data.actions:
         for act in bpy.data.actions:
             if act.name[0:2] == prefix:
@@ -459,7 +465,7 @@ def deleteSourceRig(context, rig, prefix):
 def rescaleRig(scn, trgRig, srcRig):
     if not scn.McpAutoScale:
         return
-    if isMhOfficialRig(trgRig):
+    if isDefaultRig(trgRig):
         upleg1 = trgRig.data.bones["upperleg01.L"]
         upleg2 = trgRig.data.bones["upperleg02.L"]
         trgScale = upleg1.length + upleg2.length
@@ -504,12 +510,13 @@ def renameAndRescaleBvh(context, srcRig, trgRig):
 
     from . import t_pose
     scn = context.scene
-    setActiveObject(context, srcRig)
+    reallySelect(srcRig, scn)
+    scn.update()
     #(srcRig, srcBones, action) =  renameBvhRig(rig, filepath)
-    target.getTargetArmature(trgRig, context)
+    target.getTargetArmature(trgRig, scn)
     source.findSrcArmature(context, srcRig)
     t_pose.addTPoseAtFrame0(srcRig, scn)
-    renameBones(srcRig, context)
+    renameBones(srcRig, scn)
     setInterpolation(srcRig)
     rescaleRig(context.scene, trgRig, srcRig)
     srcRig["McpRenamed"] = True
@@ -517,14 +524,18 @@ def renameAndRescaleBvh(context, srcRig, trgRig):
 
 ########################################################################
 #
-#   class MCP_OT_LoadBvh(bpy.types.Operator, LoadBVH):
+#   class VIEW3D_OT_LoadBvhButton(bpy.types.Operator, ImportHelper):
 #
 
-class MCP_OT_LoadBvh(bpy.types.Operator, LoadBVH):
+class VIEW3D_OT_LoadBvhButton(bpy.types.Operator, ImportHelper):
     bl_idname = "mcp.load_bvh"
     bl_label = "Load BVH File (.bvh)"
     bl_description = "Load an armature from a bvh file"
     bl_options = {'UNDO'}
+
+    filename_ext = ".bvh"
+    filter_glob = StringProperty(default="*.bvh", options={'HIDDEN'})
+    filepath = StringProperty(name="File Path", description="Filepath used for importing the BVH file", maxlen=1024, default="")
 
     def execute(self, context):
         try:
@@ -538,10 +549,10 @@ class MCP_OT_LoadBvh(bpy.types.Operator, LoadBVH):
         return {'RUNNING_MODAL'}
 
 #
-#   class MCP_OT_RenameBvh(bpy.types.Operator):
+#   class VIEW3D_OT_RenameBvhButton(bpy.types.Operator):
 #
 
-class MCP_OT_RenameBvh(bpy.types.Operator):
+class VIEW3D_OT_RenameBvhButton(bpy.types.Operator):
     bl_idname = "mcp.rename_bvh"
     bl_label = "Rename And Rescale BVH Rig"
     bl_description = "Rename bones of active armature and scale it to fit other armature"
@@ -551,8 +562,8 @@ class MCP_OT_RenameBvh(bpy.types.Operator):
         scn = context.scene
         srcRig = context.object
         trgRig = None
-        for ob in getSceneObjects(context):
-            if ob.type == 'ARMATURE' and getSelected(ob) and ob != srcRig:
+        for ob in scn.objects:
+            if ob.type == 'ARMATURE' and ob.select and ob != srcRig:
                 trgRig = ob
                 break
         try:
@@ -567,14 +578,19 @@ class MCP_OT_RenameBvh(bpy.types.Operator):
         return{'FINISHED'}
 
 #
-#   class MCP_OT_LoadAndRenameBvh(bpy.types.Operator, ProblemsString, LoadBVH):
+#   class VIEW3D_OT_LoadAndRenameBvhButton(bpy.types.Operator, ImportHelper):
 #
 
-class MCP_OT_LoadAndRenameBvh(bpy.types.Operator, ProblemsString, LoadBVH):
+class VIEW3D_OT_LoadAndRenameBvhButton(bpy.types.Operator, ImportHelper):
     bl_idname = "mcp.load_and_rename_bvh"
     bl_label = "Load And Rename BVH File (.bvh)"
     bl_description = "Load armature from bvh file and rename bones"
     bl_options = {'UNDO'}
+
+    problems = ""
+    filename_ext = ".bvh"
+    filter_glob = StringProperty(default="*.bvh", options={'HIDDEN'})
+    filepath = StringProperty(name="File Path", description="Filepath used for importing the BVH file", maxlen=1024, default="")
 
     def execute(self, context):
         from .retarget import changeTargetData, restoreTargetData
@@ -601,22 +617,3 @@ class MCP_OT_LoadAndRenameBvh(bpy.types.Operator, ProblemsString, LoadBVH):
 
     def draw(self, context):
         drawObjectProblems(self)
-
-#----------------------------------------------------------
-#   Initialize
-#----------------------------------------------------------
-
-classes = [
-    MCP_OT_LoadBvh,
-    MCP_OT_RenameBvh,
-    MCP_OT_LoadAndRenameBvh,
-]
-
-def initialize():
-    for cls in classes:
-        bpy.utils.register_class(cls)
-
-
-def uninitialize():
-    for cls in classes:
-        bpy.utils.unregister_class(cls)

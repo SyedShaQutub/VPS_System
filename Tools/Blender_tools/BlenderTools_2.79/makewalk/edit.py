@@ -3,9 +3,6 @@
 
 # ##### BEGIN GPL LICENSE BLOCK #####
 #
-#  Authors:             Thomas Larsson
-#  Script copyright (C) Thomas Larsson 2014
-#
 #  This program is free software; you can redistribute it and/or
 #  modify it under the terms of the GNU General Public License
 #  as published by the Free Software Foundation; either version 2
@@ -22,6 +19,13 @@
 #
 # ##### END GPL LICENSE BLOCK #####
 
+# Project Name:        MakeHuman
+# Product Home Page:   http://www.makehuman.org/
+# Code Home Page:      https://bitbucket.org/MakeHuman/makehuman/
+# Authors:             Thomas Larsson
+# Script copyright (C) MakeHuman Team 2001-2015
+# Coding Standards:    See http://www.makehuman.org/node/165
+
 import bpy
 from bpy.props import *
 from math import pi, sqrt
@@ -29,10 +33,6 @@ from mathutils import *
 from . import load, simplify, props, action
 #from .target_rigs import rig_mhx
 from .utils import *
-if bpy.app.version < (2,80,0):
-    from .buttons27 import AnswerString, LocRotDel, LeftLast
-else:
-    from .buttons28 import AnswerString, LocRotDel, LeftLast
 
 
 _Markers = []
@@ -76,7 +76,7 @@ def removeMarker(scn, frame):
 ########################################################################
 #
 #   startEdit(context):
-#   class MCP_OT_StartEdit(bpy.types.Operator):
+#   class VIEW3D_OT_McpStartEditButton(bpy.types.Operator):
 #
 
 def getUndoAction(rig):
@@ -119,7 +119,7 @@ def startEdit(context):
     return nact
 
 
-class MCP_OT_StartEdit(bpy.types.Operator):
+class VIEW3D_OT_McpStartEditButton(bpy.types.Operator):
     bl_idname = "mcp.start_edit"
     bl_label = "Start Edit"
     bl_options = {'UNDO'}
@@ -151,7 +151,7 @@ def setKeyMap(context, idname, doAdd):
 
 #
 #   undoEdit(context):
-#   class MCP_OT_UndoEdit(bpy.types.Operator):
+#   class VIEW3D_OT_McpUndoEditButton(bpy.types.Operator):
 #
 
 def undoEdit(context):
@@ -173,10 +173,11 @@ def undoEdit(context):
     return
 
 
-class MCP_OT_UndoEdit(bpy.types.Operator, AnswerString):
+class VIEW3D_OT_McpUndoEditButton(bpy.types.Operator):
     bl_idname = "mcp.undo_edit"
     bl_label = "Undo Edit"
     bl_options = {'UNDO'}
+    answer = StringProperty(default="")
 
     @classmethod
     def poll(self, context):
@@ -195,7 +196,7 @@ class MCP_OT_UndoEdit(bpy.types.Operator, AnswerString):
         return wm.invoke_props_dialog(self, width=200, height=20)
 
     def draw(self, context):
-        self.layout.label(text="Really undo editing?")
+        self.layout.label("Really undo editing?")
 
 #
 #   getActionPair(context):
@@ -230,7 +231,7 @@ def getActionPair(context):
 
 #
 #   confirmEdit(context):
-#   class MCP_OT_ConfirmEdit(bpy.types.Operator):
+#   class VIEW3D_OT_McpConfirmEditButton(bpy.types.Operator):
 #
 
 def confirmEdit(context):
@@ -270,7 +271,7 @@ def confirmEdit(context):
     return
 
 
-class MCP_OT_ConfirmEdit(bpy.types.Operator):
+class VIEW3D_OT_McpConfirmEditButton(bpy.types.Operator):
     bl_idname = "mcp.confirm_edit"
     bl_label = "Confirm Edit"
     bl_options = {'UNDO'}
@@ -290,9 +291,9 @@ class MCP_OT_ConfirmEdit(bpy.types.Operator):
 #
 #   setEditDict(editDict, frame, name, channel, index):
 #   insertKey(context, useLoc, useRot):
-#   class MCP_OT_InsertLoc(bpy.types.Operator):
-#   class MCP_OT_InsertRot(bpy.types.Operator):
-#   class MCP_OT_InsertLocRot(bpy.types.Operator):
+#   class VIEW3D_OT_McpInsertLocButton(bpy.types.Operator):
+#   class VIEW3D_OT_McpInsertRotButton(bpy.types.Operator):
+#   class VIEW3D_OT_McpInsertLocRotButton(bpy.types.Operator):
 #
 
 def setEditDict(editDict, frame, name, channel, n):
@@ -357,10 +358,14 @@ def insertKey(context, useLoc, useRot, delete):
                     displaceFCurve(fcu, ofcu, _EditLoc[fcu.array_index][name])
 
 
-class MCP_OT_InsertKey(bpy.types.Operator, LocRotDel):
+class VIEW3D_OT_McpInsertKeyButton(bpy.types.Operator):
     bl_idname = "mcp.insert_key"
     bl_label = "Key"
     bl_options = {'UNDO'}
+
+    loc = BoolProperty("Loc", default=False)
+    rot = BoolProperty("Rot", default=False)
+    delete = BoolProperty("Del", default=False)
 
     @classmethod
     def poll(self, context):
@@ -399,11 +404,14 @@ def move2marker(context, left, last):
                     break
 
 
-class MCP_OT_MoveToMarker(bpy.types.Operator, LeftLast):
+class VIEW3D_OT_McpMoveToMarkerButton(bpy.types.Operator):
     bl_idname = "mcp.move_to_marker"
     bl_label = "Move"
     bl_description = "Move to time marker"
     bl_options = {'UNDO'}
+
+    left = BoolProperty("Loc", default=False)
+    last = BoolProperty("Rot", default=False)
 
     @classmethod
     def poll(self, context):
@@ -512,23 +520,3 @@ def evalCRInterval(t, t0, t1, tfac, params):
     f = x*x*(a*x + b*x1) + x1*x1*(c*x+d*x1)
     return f
 
-#----------------------------------------------------------
-#   Initialize
-#----------------------------------------------------------
-
-classes = [
-    MCP_OT_StartEdit,
-    MCP_OT_UndoEdit,
-    MCP_OT_ConfirmEdit,
-    MCP_OT_InsertKey,
-    MCP_OT_MoveToMarker,
-]
-
-def initialize():
-    for cls in classes:
-        bpy.utils.register_class(cls)
-
-
-def uninitialize():
-    for cls in classes:
-        bpy.utils.unregister_class(cls)

@@ -3,9 +3,6 @@
 
 # ##### BEGIN GPL LICENSE BLOCK #####
 #
-#  Authors:             Thomas Larsson
-#  Script copyright (C) Thomas Larsson 2014
-#
 #  This program is free software; you can redistribute it and/or
 #  modify it under the terms of the GNU General Public License
 #  as published by the Free Software Foundation; eimcp.r version 2
@@ -22,12 +19,22 @@
 #
 # ##### END GPL LICENSE BLOCK #####
 
+# Project Name:        MakeHuman
+# Product Home Page:   http://www.makehuman.org/
+# Code Home Page:      https://bitbucket.org/MakeHuman/makehuman/
+# Authors:             Thomas Larsson
+# Script copyright (C) MakeHuman Team 2001-2015
+# Coding Standards:    See http://www.makehuman.org/node/165
+
+
+
 import bpy
 import os
 from collections import OrderedDict
 from math import pi
 from mathutils import *
 from bpy.props import *
+from bpy_extras.io_utils import ImportHelper
 
 from .armature import CArmature
 from .utils import *
@@ -122,9 +129,9 @@ def findSrcArmature(context, rig):
         _srcArmature = _sourceArmatures[scn.McpSourceRig]
     else:
         amt = _srcArmature = CArmature()
-        putInRestPose(rig, True)
+        selectAndSetRestPose(rig, scn)
         amt.findArmature(rig)
-        t_pose.autoTPose(rig, context)
+        t_pose.autoTPose(rig, scn)
         t_pose.defineTPose(rig)
         _sourceArmatures["Automatic"] = amt
         amt.display("Source")
@@ -225,7 +232,7 @@ def readSrcArmature(file, name):
     return armature
 
 
-class MCP_OT_InitSources(bpy.types.Operator):
+class VIEW3D_OT_McpInitSourcesButton(bpy.types.Operator):
     bl_idname = "mcp.init_sources"
     bl_label = "Init Source Panel"
     bl_options = {'UNDO'}
@@ -233,20 +240,3 @@ class MCP_OT_InitSources(bpy.types.Operator):
     def execute(self, context):
         initSources(context.scene)
         return{'FINISHED'}
-
-#----------------------------------------------------------
-#   Initialize
-#----------------------------------------------------------
-
-classes = [
-    MCP_OT_InitSources,
-]
-
-def initialize():
-    for cls in classes:
-        bpy.utils.register_class(cls)
-
-
-def uninitialize():
-    for cls in classes:
-        bpy.utils.unregister_class(cls)

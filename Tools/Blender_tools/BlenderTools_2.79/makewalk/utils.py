@@ -3,9 +3,6 @@
 
 # ##### BEGIN GPL LICENSE BLOCK #####
 #
-#  Authors:             Thomas Larsson
-#  Script copyright (C) Thomas Larsson 2014
-#
 #  This program is free software; you can redistribute it and/or
 #  modify it under the terms of the GNU General Public License
 #  as published by the Free Software Foundation; either version 2
@@ -22,6 +19,14 @@
 #
 # ##### END GPL LICENSE BLOCK #####
 
+# Project Name:        MakeHuman
+# Product Home Page:   http://www.makehuman.org/
+# Code Home Page:      https://bitbucket.org/MakeHuman/makehuman/
+# Authors:             Thomas Larsson
+# Script copyright (C) MakeHuman Team 2001-2015
+# Coding Standards:    See http://www.makehuman.org/node/165
+
+
 import bpy
 from bpy.props import *
 from math import sin, cos, atan, pi
@@ -29,147 +34,6 @@ from mathutils import *
 
 Deg2Rad = pi/180
 Rad2Deg = 180/pi
-
-
-#-------------------------------------------------------------
-#   Blender 2.8 compatibility
-#-------------------------------------------------------------
-
-if bpy.app.version < (2,80,0):
-
-    HideViewport = "hide"
-    DrawType = "draw_type"
-    ShowXRay = "show_x_ray"
-
-    def getCollection(context):
-        return context.scene
-
-    def getSceneObjects(context):
-        return context.scene.objects
-
-    def getSelected(ob):
-        return ob.select
-
-    def setSelected(ob, value):
-        ob.select = value
-
-    def setActiveObject(context, ob):
-        scn = context.scene
-        scn.objects.active = ob
-        scn.update()
-
-    def putOnHiddenLayer(ob, coll=None, hidden=None):
-        ob.layers = 19*[False] + [True]
-
-    def createHiddenCollection(context):
-        return context.scene
-
-    def inSceneLayer(context, ob):
-        scn = context.scene
-        for n in range(len(scn.layers)):
-            if (ob.layers[n] and scn.layers[n]):
-                return True
-        return False
-
-    def activateObject(context, ob):
-        scn = context.scene
-        for ob1 in scn.objects:
-            ob1.select = False
-        ob.select = True
-        scn.objects.active = ob
-
-    def Mult2(x, y):
-        return x * y
-
-    def Mult3(x, y, z):
-        return x * y * z
-
-    def Mult4(x, y, z, u):
-        return x * y * z * u
-
-    def splitLayout(layout, factor):
-        return layout.split(factor)
-
-    def deleteObject(context, ob):
-        for scn in bpy.data.scenes:
-            if ob in scn.objects.values():
-                scn.objects.unlink(ob)
-        if ob.users == 0:
-            bpy.data.objects.remove(ob)
-            del ob
-
-else:
-
-    HideViewport = "hide_viewport"
-    DrawType = "display_type"
-    ShowXRay = "show_in_front"
-
-    def getCollection(context):
-        return context.scene.collection
-
-    def getSceneObjects(context):
-        return context.view_layer.objects
-
-    def getSelected(ob):
-        return ob.select_get()
-
-    def setSelected(ob, value):
-        ob.select_set(value)
-
-    def setActiveObject(context, ob):
-        vly = context.view_layer
-        vly.objects.active = ob
-        vly.update()
-
-    def putOnHiddenLayer(ob, coll=None, hidden=None):
-        if coll:
-            coll.objects.unlink(ob)
-        if hidden:
-            hidden.objects.link(ob)
-
-    def createHiddenCollection(context):
-        coll = bpy.data.collections.new(name="Hidden")
-        context.scene.collection.children.link(coll)
-        coll.hide_viewport = True
-        coll.hide_render = True
-        return coll
-
-    def inSceneLayer(context, ob):
-        coll = context.scene.collection
-        return (ob in coll.objects.values())
-
-    def activateObject(context, ob):
-        scn = context.scene
-        for ob1 in scn.collection.objects:
-            ob1.select_set(False)
-        ob.select_set(True)
-        context.view_layer.objects.active = ob
-
-    def printActive(name, context):
-        coll = context.scene.collection
-        print(name, context.object, coll)
-        sel = [ob for ob in coll.objects if ob.select_get()]
-        print("  ", sel)
-
-    def Mult2(x, y):
-        return x @ y
-
-    def Mult3(x, y, z):
-        return x @ y @ z
-
-    def Mult4(x, y, z, u):
-        return x @ y @ z @ u
-
-    def splitLayout(layout, factor):
-        return layout.split(factor=factor)
-
-    def deleteObject(context, ob):
-        for coll in bpy.data.collections:
-            if ob in coll.objects.values():
-                coll.objects.unlink(ob)
-        if True or ob.users == 0:
-            bpy.data.objects.remove(ob)
-            del ob
 
 #
 #   printMat3(string, mat)
@@ -218,33 +82,28 @@ RigifyLayers = 27*[True] + 5*[False]
 #   Identify rig type
 #
 
-def hasAllBones(blist, rig):
-    for bname in blist:
+def allBonesInList(list, rig):
+    for bname in list:
         if bname not in rig.pose.bones.keys():
             return False
     return True
 
-def isMhxRig(rig):
-    return hasAllBones(["foot.rev.L"], rig)
 
-def isMhOfficialRig(rig):
-    return hasAllBones(["risorius03.R"], rig)
+def isMhxRig(rig):
+    return ('foot.rev.L' in rig.pose.bones.keys())
+
+def isDefaultRig(rig):
+    return allBonesInList(['risorius03.L', 'shoulder01.R', "upperleg01.L", "upperleg02.L"], rig)
+
+def isMbRig(rig):
+    return allBonesInList(["LeftArm", "LeftArmRoll"], rig)
 
 def isMhx7Rig(rig):
-    return hasAllBones(["FootRev_L"], rig)
+    return ('FootRev_L' in rig.pose.bones.keys())
 
 def isRigify(rig):
-    return hasAllBones(["MCH-spine.flex"], rig)
+    return ('MCH-spine.flex' in rig.pose.bones.keys())
 
-def isRigify2(rig):
-    return hasAllBones(["MCH-upper_arm_ik.L"], rig)
-
-def isGenesis3(rig):
-    return (hasAllBones(["abdomenLower", "lShldrBend"], rig) and
-            not isGenesis(rig))
-
-def isGenesis(rig):
-    return hasAllBones(["abdomen2", "lShldr"], rig)
 
 def isMakeHumanRig(rig):
     return ("MhAlpha8" in rig.keys())
@@ -303,8 +162,6 @@ def getIkBoneList(rig):
             hips = rig.pose.bones["root"]
         elif isRigify(rig):
             hips = rig.pose.bones["hips"]
-        elif isRigify2(rig):
-            hips = rig.pose.bones["torso"]
         else:
             for bone in rig.data.bones:
                 if bone.parent is None:
@@ -373,7 +230,7 @@ def insertRotation(pb, mat):
 
 def isRotationMatrix(mat):
     mat = mat.to_3x3()
-    prod = Mult2(mat, mat.transposed())
+    prod = mat * mat.transposed()
     diff = prod - Matrix().to_3x3()
     for i in range(3):
         for j in range(3):
@@ -529,18 +386,45 @@ def setRotation(pb, rot, frame, group):
 
 
 #
-#   putInRestPose(rig, useSetKeys):
+#   setRestPose(rig):
 #
 
-def putInRestPose(rig, useSetKeys):
-    for pb in rig.pose.bones:
-        pb.matrix_basis = Matrix()
-        if useSetKeys:
-            if pb.rotation_mode == 'QUATERNION':
-                pb.keyframe_insert('rotation_quaternion')
-            else:
-                pb.keyframe_insert('rotation_euler')
-            pb.keyframe_insert('location')
+def selectAndSetRestPose(rig, scn):
+    reallySelect(rig, scn)
+    bpy.ops.object.mode_set(mode='POSE')
+    bpy.ops.pose.select_all(action='SELECT')
+    bpy.ops.pose.rot_clear()
+    bpy.ops.pose.loc_clear()
+    bpy.ops.pose.scale_clear()
+
+#
+#  reallySelect(ob, scn)
+#  Make sure that selecting an object really takes.
+#
+
+def reallySelect(ob, scn):
+    ob.hide = False
+    visible = False
+    for n,vis in enumerate(ob.layers):
+        if vis and scn.layers[n]:
+            visible = True
+            break
+    if not visible:
+        for n,vis in enumerate(ob.layers):
+            if vis:
+                scn.layers[n] = True
+                visible = True
+                break
+    if not visible:
+        for n,vis in enumerate(scn.layers):
+            if vis:
+                ob.layers[n] = True
+                visible = True
+                break
+    if not visible:
+        ob.layers[0] = scn.layers[0] = True
+    scn.objects.active = ob
+
 
 #
 #    setInterpolation(rig):
@@ -580,16 +464,23 @@ def getObjectProblems(self, context):
     self.problems = ""
     epsilon = 1e-2
     rig = context.object
+    scn = context.scene
 
     eu = rig.rotation_euler
     print(eu)
     if abs(eu.x) + abs(eu.y) + abs(eu.z) > epsilon:
-        self.problems += "object rotation\n"
+        if scn.McpApplyObjectTransforms:
+            bpy.ops.object.transform_apply(location=False, rotation=True, scale=False)
+        else:
+            self.problems += "object rotation\n"
 
     vec = rig.scale - Vector((1,1,1))
     print(vec, vec.length)
     if vec.length > epsilon:
-        self.problems += "object scaling\n"
+        if scn.McpApplyObjectTransforms:
+            bpy.ops.object.transform_apply(location=False, rotation=False, scale=True)
+        else:
+            self.problems += "object scaling\n"
 
     if self.problems:
         wm = context.window_manager
@@ -616,10 +507,10 @@ def problemFreeFileSelect(self, context):
 
 def drawObjectProblems(self):
     if self.problems:
-        self.layout.label(text="MakeWalk cannot use this rig because it has:")
+        self.layout.label("MakeWalk cannot use this rig because it has:")
         for problem in self.problems.split("\n"):
-            self.layout.label(text="  %s" % problem)
-        self.layout.label(text="Apply object transformations before using MakeWalk")
+            self.layout.label("  %s" % problem)
+        self.layout.label("Apply object transformations before using MakeWalk")
 
 #
 #   showProgress(n, frame):
@@ -660,7 +551,7 @@ class MocapError(Exception):
         global _errorLines
         self.value = value
         _errorLines = (
-            ["Category: %s" % _category] +
+            ["Catogory: %s" % _category] +
             value.split("\n") +
             ["" +
              "For corrective actions see:",
@@ -690,5 +581,5 @@ class ErrorOperator(bpy.types.Operator):
     def draw(self, context):
         global _errorLines
         for line in _errorLines:
-            self.layout.label(text=line)
+            self.layout.label(line)
 

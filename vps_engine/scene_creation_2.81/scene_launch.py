@@ -23,9 +23,9 @@ import asset_import
 importlib.reload(asset_import)
 from asset_import import *
 
-import weather
-importlib.reload(weather)
-from weather import *
+import gen_dataset
+importlib.reload(gen_dataset)
+from gen_dataset import *
 
 DEBUG = False
 if DEBUG == True:
@@ -68,7 +68,7 @@ def main():
           # TODO: Import city and character models form bash file
 
      assetImport()
-     dynamicWeather()
+     
      #TODO : Define this function
      #cameras = define_CAMS(units = 1)
      cameras = ['Camera001']

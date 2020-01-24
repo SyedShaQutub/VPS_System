@@ -1,12 +1,14 @@
 # reload every import 
+import bpy
 import sys, os
 import importlib
-import bpy
+
 import metaData
 importlib.reload(metaData)
 import objectbasedAlpha
 importlib.reload(objectbasedAlpha)
-from objectbasedAlpha import objectbasedAlpha
+from objectbasedAlpha import ObjectbasedAlpha
+
 # TODO: change this to relative path using os/pathlib
 # NOTE: If you load Blender first then open a project then the CWD is where Blender is. If you script from the blender the CWD is the location of the blender program.
 
@@ -46,7 +48,12 @@ def gen_CompositorNodes():
     obj_labels_color = [(0,0,0)] * len(obj_names)
 
     bpy.context.scene.view_layers["View Layer"].use_pass_object_index = True
+    bpy.context.scene.view_layers["View Layer"].use_pass_environment = True
 
+    Sky_label = ( 70,130,180)
+    sky_label = [x / 255 for x in Sky_label]
+    sky_label.extend([1])
+    #attribute labels data corresponsing to the object
     for obj_ind, obj in enumerate(obj_names):
         for label in labels:
             if label[-1].lower() in obj.lower(): 
@@ -81,11 +88,17 @@ def gen_CompositorNodes():
     # inputLink_image = alphablocks[0].get_outputLink()
 
     for idx, label_list in enumerate(labels_list):
-        alphablocks.append(objectbasedAlpha(label_list, inputLink_image, inputLink_obj_id, idx, tree))
+        alphablocks.append(ObjectbasedAlpha(label_list, inputLink_image, inputLink_obj_id, idx, tree))
         inputLink_image = alphablocks[idx].get_outputLink()
 
+    #environment based Alpha
+    envAlphaNode = tree.nodes.new('CompositorNodeAlphaOver') # add alpha over node
+    envAlphaNode.inputs[2].default_value = sky_label
+    links.new(inputLink_image, envAlphaNode.inputs[1])
+    links.new(renderer.outputs['Env'], envAlphaNode.inputs[0])
+
     #Global LinkS
-    links.new(inputLink_image, global_composite.inputs[0] )
+    links.new(envAlphaNode.outputs[0], global_composite.inputs[0] )
 
 def gen_labels():
 

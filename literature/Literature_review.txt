@@ -1,0 +1,4 @@
+http://timothykol.com/pub/sky.pdf
+https://cgg.mff.cuni.cz/projects/SkylightModelling/
+Sun position: https://archive.blender.org/wiki/index.php/Extensions:2.6/Py/Scripts/3D_interaction/Sun_Position/
+	update dto 2.8: https://github.com/kevancress/sun_position_b28_test

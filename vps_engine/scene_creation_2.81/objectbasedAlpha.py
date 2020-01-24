@@ -1,6 +1,6 @@
 import bpy
 
-class objectbasedAlpha():
+class ObjectbasedAlpha():
     def __init__(self, labelList, inputLink_image, inputLink_obj_id, idx, tree):
 
         self.label_name = labelList[0]
@@ -30,7 +30,7 @@ class objectbasedAlpha():
 
         self.link01 = tree.links.new(inputLink_obj_id,self.idMask.inputs[0]) # 14 - 'IndexOB'
         self.link02 = tree.links.new(inputLink_image,self.alpha.inputs[1])
-        self.linik03 = tree.links.new(self.idMask.outputs[0], self.alpha.inputs[0])
+        self.link03 = tree.links.new(self.idMask.outputs[0], self.alpha.inputs[0])
 
     def get_outputLink(self):
         return self.alpha.outputs[0] # output from alpha over node

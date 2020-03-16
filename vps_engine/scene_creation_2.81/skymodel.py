@@ -22,8 +22,8 @@ class SkyModel():
 
         sun = bpy.data.lights.new("Sun", "SUN")
         self.sun = bpy.data.objects.new("SunRig", sun)  
-        self.sun.data.color = [1,1,1]
-        self.sun.data.energy = 1        
+        self.sun.data.color = [1,0.9,0.9]
+        self.sun.data.energy = 15        
         bpy.context.collection.objects.link(self.sun)
         self.time = 12
         bpy.data.scenes['Scene'].sun_pos_properties.sun_object = self.sun
@@ -47,8 +47,9 @@ class SkyModel():
         bpy.data.scenes['Scene'].sun_pos_properties.latitude = lat_long[0]
         bpy.data.scenes['Scene'].sun_pos_properties.longitude = lat_long[1]
 
-    def sunSettings(self, color, energy):
-        self.sun.data.color = color
+    def sunSettings(self, energy, color=None):
+        if color is not None:
+            self.sun.data.color = color
         self.sun.data.energy = energy
         
     def date_timeSettings(self,mm, dd, hrs):
@@ -57,13 +58,14 @@ class SkyModel():
         bpy.data.scenes['Scene'].sun_pos_properties.time = hrs
 
         
-def sky_parameter(del_nodes=False):
+def sky_model(del_nodes=False):
     # set render to Cycles
         # remove all nodes
     if del_nodes == True:
         for currentNode in bpy.data.worlds['World'].node_tree.nodes:
             bpy.data.worlds['World'].node_tree.nodes.remove(currentNode)
-
+    	
+    ## TODO: move to blender config
     bpy.context.scene.render.engine = 'CYCLES'
     bpy.context.scene.cycles.device = 'GPU'
     bpy.context.scene.world.use_nodes = True

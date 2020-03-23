@@ -7,6 +7,7 @@ import re
 class ImportBlendInternalObjects():
     def __init__(self, name, loc=None, degree=None, scale=None):
         self.asset_name = name
+        self.location = loc
         if(name=='cam'):
             scn = bpy.context.scene
             self.cam_obj = bpy.data.objects.new("Camera", bpy.data.cameras.new("Camera"))
@@ -23,12 +24,16 @@ class ImportBlendInternalObjects():
     
     def rotate(self,degree=[0,0,0], orintation=None):
         rotateObject(self.object_name, degree, orintation)
+        return None
 
     def relocate(self, loc=None):
         relocateObject(self.object_name, loc)
+        self.location = loc
+        return None
 
     def scale(self, scale=None):
         scaleObject(self.object_name, scale)
+        return None
 
 def bld_clearscreenspace():
     print("Clearing the objects in the scene")

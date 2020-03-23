@@ -22,21 +22,24 @@ class SkyModel():
 
         sun = bpy.data.lights.new("Sun", "SUN")
         self.sun = bpy.data.objects.new("SunRig", sun)  
-        self.sun.data.color = [1,0.9,0.9]
-        self.sun.data.energy = 15        
+        self.sun.data.color = [1,0.7,0.9]
+        self.sun.data.energy = 1   
         bpy.context.collection.objects.link(self.sun)
-        self.time = 12
+        self.time = 16
         bpy.data.scenes['Scene'].sun_pos_properties.sun_object = self.sun
         bpy.data.scenes['Scene'].sun_pos_properties.sun_distance = 149999992832
-        bpy.data.scenes['Scene'].sun_pos_properties.latitude = 0
-        bpy.data.scenes['Scene'].sun_pos_properties.longitude = 0
+        bpy.data.scenes['Scene'].sun_pos_properties.latitude = CITY_LAT_LONG[0][1][0]
+        bpy.data.scenes['Scene'].sun_pos_properties.longitude = CITY_LAT_LONG[0][1][1]
 
         #date
         bpy.data.scenes['Scene'].sun_pos_properties.day = 1
-        bpy.data.scenes['Scene'].sun_pos_properties.month = 1
-        bpy.data.scenes['Scene'].sun_pos_properties.year = 2014
+        bpy.data.scenes['Scene'].sun_pos_properties.month = 8
+        bpy.data.scenes['Scene'].sun_pos_properties.year = 2017
+        bpy.context.scene.sun_pos_properties.UTC_zone = 1
         #time
-        bpy.data.scenes['Scene'].sun_pos_properties.time = 12
+        bpy.data.scenes['Scene'].sun_pos_properties.time = self.time
+
+
 
     def skydomeSettings(self, turbidity, albedo, brightness):
         self.sky_texture.turbidity = turbidity

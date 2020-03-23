@@ -56,8 +56,8 @@ def gen_CompositorNodes_objbased():
         for label in labels:
             for idx in range(len(label[-1])):
                 if label[-1][idx].lower() in obj.lower(): 
-                    bpy.data.objects[obj].pass_index = label[1]
-                    obj_pass_idx[obj_ind] = label[1]
+                    bpy.data.objects[obj].pass_index = label[2]  #  label[1] 
+                    obj_pass_idx[obj_ind] = label[2] #  label[1] 
                     obj_labels_color[obj_ind] = list(label[7])
                     obj_labels_name[obj_ind] = label[0]
                     label_found = True
@@ -93,7 +93,7 @@ def gen_CompositorNodes_objbased():
     # inputLink_image = alphablocks[0].get_outputLink()
 
     for idx, label_list in enumerate(labels_list):
-        alphablocks.append(ComponentbasedAlpha(label_list, inputLink_image, inputLink_obj_id, idx, tree))
+        alphablocks.append(ComponentbasedAlpha(label_list, inputLink_image, inputLink_obj_id, idx, tree, color = 'grey'))
         inputLink_image = alphablocks[idx].get_outputLink()
 
     #environment based Alpha
@@ -125,8 +125,8 @@ def gen_CompositorNodes_matbased():
             for idx in range(len(label[-1])):
             
                 if label[-1][idx].lower() in mat.lower(): 
-                    bpy.data.materials[mat].pass_index = label[1]
-                    mat_pass_idx[mat_ind] = label[1]
+                    bpy.data.materials[mat].pass_index = label[2]
+                    mat_pass_idx[mat_ind] = label[2]
                     mat_labels_name[mat_ind] = label[0]
                     mat_labels_color[mat_ind] = list(label[7])
                     label_found = True
@@ -162,13 +162,14 @@ def gen_CompositorNodes_matbased():
     # inputLink_image = alphablocks[0].get_outputLink()
 
     for idx, label_list in enumerate(labels_list):
-        alphablocks.append(ComponentbasedAlpha(label_list, inputLink_image, inputLink_mat_id, idx, tree))
+        alphablocks.append(ComponentbasedAlpha(label_list, inputLink_image, inputLink_mat_id, idx, tree,  label = 'grey'))
         inputLink_image = alphablocks[idx].get_outputLink()
 
     #environment based Alpha
-    Sky_label = (70,130,180)
+    #Sky_label = (70,130,180)
+    Sky_label = [10,10,10]
     sky_label = [x / 255 for x in Sky_label]
-    sky_label.extend([1])
+    sky_label.extend([0])
     envAlphaNode = tree.nodes.new('CompositorNodeAlphaOver') # add alpha over node
     envAlphaNode.inputs[2].default_value = sky_label
     links.new(inputLink_image, envAlphaNode.inputs[1])

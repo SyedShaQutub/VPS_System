@@ -32,8 +32,11 @@ class Char_singleFrame:
     def __init__(self, char_variant=None, frame=1, scale =None, loc=None, degree=None, Charimport='LeFemme',  walk_pose='normal'):
         self.asset_name = char_variant
         self.character = Charimport
-        self.pose_frame = frame
+        self.pose_frame = frame - 1
+        self.frames = 1
+        print("\n\n\n\n\n\n\n" +  self.frames + "\n\n\n\n\n\n\n")
         if self.character == 'LeFemme':
+            self.frames = 1
             # TODO: Check if texture file is present, if not print warning
             bpy.ops.object.select_all(action='DESELECT')
             if walk_pose == 'normal':
@@ -91,11 +94,11 @@ class Char_singleFrame:
         blender_utils.scaleObject(self.object_name, scale)        
         return None
 
-    def hide_viewport(hide_status=False):
+    def hide_viewport(self, hide_status=False):
     # hide_status = True; hides from viewport
     # hide_status = False; brings back to the viewport
-        for objId in range(len(object_list)):
-            object_list[objId].hide_viewport = hide_status
+        for objId in range(len(self.object_list)):
+            self.object_list[objId].hide_viewport = hide_status
         return None
 
     def join(self):
@@ -137,7 +140,7 @@ class Char_multiFrame:
             files = os.listdir(self.basefolder)
             files = [file for file in files if os.path.isfile(os.path.join(self.basefolder, file))]
             blender_utils.sort_nicely(files)
-            self.frames = 3#len(files)
+            self.frames = 1 #len(files)
             self.frame_objects_list = [[None]] * self.frames
             self.frame_objects_name= [None] * self.frames
             for frame_idx in range(self.frames): #len(files)):
@@ -175,8 +178,12 @@ class Char_multiFrame:
             blender_utils.rotateObject(self.frame_objects_name[frame_id], degree, orintation)
         return None
     
-    def relocate(self, frame_id, loc=[0,0,0]):
-        blender_utils.relocateObject(self.frame_objects_name[frame_id], loc)
+    def relocate(self, frame_id=None, loc=[0,0,0]):
+        if frame_id == None:
+            for frame_idx in range(self.frames):
+                blender_utils.relocateObject(self.frame_objects_name[frame_idx], loc)
+        else:
+            blender_utils.relocateObject(self.frame_objects_name[frame_id], loc)
         return None
 
     def scale(self, frame_id, scale=None):

@@ -1,13 +1,18 @@
 import bpy
 
 class ComponentbasedAlpha():
-    def __init__(self, labelList, inputLink_image, inputLink_comp_id, idx, tree):
+    def __init__(self, labelList, inputLink_image, inputLink_comp_id, idx, tree, label = 'color'):
 
         self.label_name = labelList[0]
         self.pass_idx   = labelList[1]
-        color = labelList[2]
-        color =  [x / 255 for x in color]
-        color.extend([1])
+        if label == 'color':
+            color = labelList[2]
+            color =  [x / 255 for x in color]
+            color.extend([1])
+        elif label == 'grey':
+            color = [self.pass_idx, self.pass_idx, self.pass_idx]
+            color =  [x / 255 for x in color]
+            color.extend([1])
         self.id = idx
         self.color = color
         ##DEBUG

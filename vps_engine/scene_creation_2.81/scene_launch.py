@@ -138,27 +138,17 @@ def main():
 
      sanitize_blendImages()
 
-     #char_whitecoat = Char_singleFrame(char_variant='whitecoat', frame=1,scale=[0.003,0.003,0.003], loc=[0,0,-0.0335], degree=None, Charimport='LeFemme',  walk_pose='normal')
-     #char_whitecoat.join()
-     # char_whitecoat_1 = CharImport('whitecoat', frame=2,scale=[0.003,0.003,0.003], loc=[0.5,0,-0.035], degree=None, Charimport='femme',  walk_pose='normal')
-     # char_whitecoat_1.join()
+     #char_whitecoat = Char_singleFrame(char_variant='whitecoat', scale=[0.003,0.003,0.003], degree=None)
 
      char_whitecoat = Char_multiFrame(char_variant='whitecoat', scale=[0.003,0.003,0.003], degree = [90,0,90])
-     # char_whitecoat.hide_viewport(frame_id = 0, hide_status=False)
-     # char_whitecoat.relocate(frame_id = 0, loc=[0,0,-0.0335])
-
-     # char_whitecoat.hide_viewport(frame_id = 1, hide_status=False)
-     # char_whitecoat.relocate(frame_id = 1, loc=[0,0.5,-0.0335])
-
-     # char_whitecoat.hide_viewport(frame_id = 2, hide_status=False)
-     # char_whitecoat.relocate(frame_id = 2, loc=[0.5,0,-0.0335])          
+     
      skyModel = sky_model()
      
      #TODO : Define this function
      #cameras = define_CAMS(units = 1)
      # cameras = ['Camera001']
      #generateDataset(cameras, launch_path)
-     camera = ImportBlendInternalObjects('cam', loc=[-5.95582, 0.019028, 0.599328], degree=[90,0,270])
+     camera = ImportBlendInternalObjects('cam', loc=[-3.0926, 0.87055, 0.86311], degree=[90,0,270])
      generateDataset(camera, char_whitecoat, data_gene_path, mode='mat')
      #gen_labels_env(mode ='mat')
 

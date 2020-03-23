@@ -4,7 +4,7 @@ Creation of Validation parameter space system for 3D scenes to test algorithms r
 
 #### requirements:
  1. Blender 2.8X
-    Blender addons (sun position addon - can be located in repository). In blender goto edit->preferences->addons and locate the addon fodler to install. 
+    Blender addons (sun position addon - can be located in repository->Tools). In blender goto edit->preferences->addons and locate the addon fodler to install. 
     
  1. Python packages to be installed in blender's python enviroment: 
     * Shapely
